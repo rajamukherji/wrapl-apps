@@ -1,0 +1,79 @@
+# About
+
+## About
+
+Wrapl is a high level, dynamically typed interpreted programming language.
+
+## Features
+
+* Object-oriented: Every value in Wrapl is an object with a type which is known at runtime. The types form a hierarchy with multiple inheritence.
+* Multiple-dispatch: Method dispatch in Wrapl depend on the types and values of all of their arguments.
+* Pass-by-reference: Wrapl allows variables to be passed by reference to other functions.
+* Functional closures: Functions in Wrapl are first-class objects which may passed to other functions or stored in variables. Functions can both read and write variables declared in surrounding scopes.
+* Goal-directed: Every expression in Wrapl can produce 0, 1, or more values. An expression which can produce more than 1 value may be resumed to produce its next value.
+
+For some sample Wrapl code, <b>check</b> out the [samples pages](samples.html).
+
+## Sample
+
+``` wrapl
+MOD MarkdownTest;
+
+IMP IO.Terminal USE Out;
+IMP Markdown.Parser;
+
+DEF Print(args*) (
+	Out:write(args:length);
+	EVERY Out:writes(' <{1 SKIP args:values}>');
+	Out:write("\;n");
+);
+
+VAR parser <- Parser.New(NIL);
+parser:enter_block <- Print;
+parser:leave_block <- Print;
+parser:enter_span <- Print;
+parser:leave_span <- Print;
+parser:text <- Print;
+
+parser:write(>>EOI
+## Header &amp; Stuff
+
+* A
+* B
+* C
+
+---
+
+~~~ this is a test
+int main() {
+
+}
+~~~
+EOI);
+
+END MarkdownTest.
+```
+
+### Also
+
+``` wrapl
+\IMP IO.File;
+\WITH file <- File.Open("Render.wrapl", File.Flag.Read + File.Flag.Text) DO file:copy(out);
+```
+
+## Status
+
+* The main [module loader](/tools/riva.html) is fully functional.
+* The [Wrapl module](/doc/Wrapl/Loader.html) has been implemented.
+* A number of [basic libraries](/doc.html#libraries) have been written.
+* An [interactive interpreter](/tools/wrapl.html) exists for test Wrapl code.
+* A Wrapl based [preprocessor](/tools/wrpp.html) has been written in Wrapl and is used to generate this website.
+* A [linker](/tools/rlink.html) has been written to generate [Riva](/tools/riva.html) binary modules from object files.
+
+
+## Contact
+
+For any questions or comments regarding Wrapl, you can use the [mailing list](https://lists.sourceforge.net/lists/listinfo/wrapl-discussion) or send an email me directly at _rajamukherji AT gmail.com_.
+
+You can visit the project website [here](\write("http://test");) or [here](http://test).
+
