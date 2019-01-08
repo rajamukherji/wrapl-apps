@@ -1,0 +1,80 @@
+\IMP IO.Buffer, .MarkdownRenderer;
+\IMP Fmt.LaTeX.iTeX;
+\IMP Fmt.Xml;
+\IMP Std.String;
+\IMP Util.Base64;
+\IMP Gir.Cairo;
+\VAR slide_num <- 0;
+\DEF slide <[] num, title, buffer, footnotes>;
+\TO :write(s@slide, x) s:buffer:write(x);
+\TO begin(=slide, title) push(slide(slide_num <- $ + 1, title, Buffer.New(), []));
+\TO end(=slide) (
+	VAR s <- pop();
+	out:write('
+<div class="slide hidden" id="slide{s:num}">
+	<div class="title">{s:num}. {escape(s:title)}</div>
+	<div class="body">');
+	s:buffer:copy(out);
+	out:write('
+	</div>
+	<ol class="footer">');
+	EVERY out:write('<li>{s:footnotes:values}</li>');
+	out:write('
+	</ol>
+</div>');
+);
+\DEF footnote(text) (
+	VAR s <- stack:values IN slide;
+	s:footnotes:put(escape(text));
+	out:write('<sup class="footnote">{s:footnotes:length}</sup>');
+);
+\DEF md <[] buffer>;
+\METH :write(m@md, x) m:buffer:write(x);
+\METH begin(=md) push(md(Buffer.New()));
+\METH end(=md) (
+	VAR m <- pop();
+	VAR md <- MarkdownRenderer.New();
+	md:parser:parse(m:buffer:rest);
+	EVERY out:write(md:root:content:values);
+);
+\DEF math(text) out:write(iTeX.ToMathML('${text}$'));
+\METH begin(=math) push(Buffer.New());
+\METH end(=math) (
+	VAR buffer <- pop();
+	out:write(iTeX.ToMathML('$${buffer:rest}$$'));
+);
+\DEF draw(width, height, callback) (
+	VAR surface <- Cairo.Surface.ImageSurfaceCreate(Cairo.Format.Argb32, width, height);
+	VAR cairo <- Cairo.Cairo.Create(surface);
+	callback(cairo);
+	VAR buffer <- Buffer.New();
+	surface:write_to_png_stream(<buffer, data, length> (
+		buffer:write(data, length);
+		RET Cairo.Status.Success;
+	), buffer);
+	out:write('<img width="{width}" height="{height}" src="data:image/png;base64,{Base64.Encode(buffer:rest)}"/>');
+);
+\DEF id(text) (
+	VAR xml <- Xml.LoadString(iTeX.ToMathML('${text}$'), Xml.HtmlEntities);
+	VAR id <- '$ID{ids:size}$';
+	ids:insert(id, xml);
+	out:write(id);
+);
+<style>
+\IMP IO.File;
+\WITH file <- File.Open("slides.css", File.Flag.Read) DO (
+	file:copy(out);
+	file:close;
+);
+\WITH file <- File.Open("code.css", File.Flag.Read) DO (
+	file:copy(out);
+	file:close;
+);
+</style>
+<title>Rabs Technical Overview</title>
+<script>
+\WITH file <- File.Open("slides.js", File.Flag.Read) DO (
+	out:write(escape(file:rest));
+	file:close;
+);
+</script>

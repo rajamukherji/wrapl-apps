@@ -1,0 +1,90 @@
+\IMP Gir.Gtk, Gir.GtkSource, Fmt.Xml, Std.String, IO.Buffer;
+\DEF Entities <- {"<" IS "&lt;", ">" IS "&gt;", "&" IS "&amp;"};
+\DEF escape(text) (
+	text:any("<>&") => (
+		VAR r <- "", a <- 1, b;
+		EVERY b <- text:any("<>&") DO (
+			r <- r + text[a, b] + Entities[text[b]];
+			a <- b + 1;
+		);
+		r <- r + text[a, 0];
+		RET r;
+	);
+	RET text;
+);
+\DEF keyword(text) out:write('<span class="keyword">{text}</span>');
+\DEF var(text) out:write('<span class="var">{text}</span>');
+\DEF term(text) out:write('<span class="term">{escape(text)}</span>');
+\DEF lit(text) out:write('<span class="literal">{escape(text)}</span>');
+\VAR style_name <- 'base16-google-light-2';
+\DEF language_manager <- GtkSource.LanguageManager.GetDefault();
+\DEF languages {}:deffun(<id> language_manager:get_language(id));
+\DEF style_manager <- GtkSource.StyleSchemeManager.GetDefault();
+\DEF styles {}:deffun(<id> style_manager:get_scheme(id));
+\DEF code_styles {}:deffun(; style, styles) 'code{styles:size}';
+\DEF ids {};
+\DEF code(lang, text) (
+);
+\DEF CodeT <[] lang, buffer>;
+\METH :write(code @ CodeT, text) code:buffer:write(text);
+\METH begin(=code, lang) push(CodeT(lang, Buffer.New()));
+\METH end(=code) (
+	VAR code <- pop();
+	VAR language <- languages[code:lang];
+	VAR buffer <- GtkSource.Buffer.NewWithLanguage(language);
+	buffer:set_highlight_syntax(:true);
+	VAR style <- styles[style_name];
+	buffer:set_style_scheme(style);
+	VAR end <- Gtk.TextIter._Alloc();
+	buffer:get_end_iter(end);
+	VAR text <- code:buffer:rest;
+	text <- $[$:skip("\n"), 0];
+	buffer:insert(end, text, text:length);
+	VAR xml <- Xml.New(:div, {"class" IS "code"});
+	VAR start <- Gtk.TextIter._Alloc();
+	buffer:get_start_iter(start);
+	buffer:ensure_highlight(start, end);
+	VAR tag_table <- buffer:get_tag_table;
+	VAR char, tags, tag;
+	REP (
+		char <- start:get_char;
+		UNTIL char = 0;
+		tags <- start:get_toggled_tags(:false);
+		EVERY tag <- tags:values DO (
+			tag:get_property("foreground-set") == :true => (
+				xml <- $:parent;
+			);
+		);
+		tags <- start:get_toggled_tags(:true);
+		EVERY tag <- tags:values DO (
+			tag:get_property("foreground-set") == :true => (
+				VAR class <- code_styles['color:{tag:get_property("foreground-rgba"):to_string};'];
+				xml <- Xml.New($, :span, {"class" IS class});
+			);
+		);
+		xml:append(char:chr);
+		WHILE start:forward_char;
+	);
+	VAR content <- [], child;
+	EVERY child <- xml:content:values DO (
+		child IN String.T => (
+			VAR i <- 1, j;
+			REP (WHILE j <- child:find("$ID", i);
+				child[j + 3] IN "0123456789" => (
+					i < j => content:put(child[i, j]);
+					i <- child:find("$", j + 3) + 1;
+					content:put(ids:delete(child[j, i]));
+				) // (
+					content:put(child[i, j + 3]);
+					i <- j + 3;
+				);
+			);
+			j <- child:length + 1;
+			i < j => content:put(child[i, j]);
+		) // (
+			content:put(child);
+		);
+	);
+	xml:content <- content;
+	out:write(xml);
+);

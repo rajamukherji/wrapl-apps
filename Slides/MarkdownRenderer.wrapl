@@ -1,0 +1,97 @@
+MOD Render;
+
+IMP IO.Terminal USE Out;
+IMP Fmt USE Markdown, Xml, Html;
+IMP Sys.Program USE Args;
+IMP IO.File;
+IMP IO.Buffer;
+IMP Std.String;
+
+DEF T! <[] parser, level, root, node>;
+
+DEF EnterBlock :?;
+DEF LeaveBlock :?;
+DEF EnterSpan :?;
+DEF LeaveSpan :?;
+DEF Text :?;
+
+METH EnterBlock(t+ @ T, =:doc) NIL;
+METH LeaveBlock(t+ @ T, =:doc) NIL;
+
+METH EnterBlock(t+ @ T, tag) t:node <- Xml.New($, tag);
+METH LeaveBlock(t+ @ T) t:node <- $:parent;
+
+METH EnterBlock(t+ @ T, =:quote) t:node <- Xml.New($, :div, {"class" IS "quote"});
+
+METH EnterBlock(t+ @ T, =:h, level) (
+	DEF h [:h1, :h2, :h3, :h4, :h5, :h6];
+	level <= t:level => t:node <- $:parent;
+	t:level <- level;
+	t:node <- Xml.New($, :section, {"class" IS 'level-{level}'});
+	t:node <- Xml.New($, h[level]);
+);
+
+METH LeaveBlock(t+ @ T, =:h, level) (
+	t:node <- $:parent;
+);
+
+DEF CodeT <[] container, buffer, end>;
+
+METH Text(code+ @ CodeT, =:text, text) code:buffer:insert(code:end, text, text:length);
+METH Text(code+ @ CodeT, =:br) code:buffer:insert(code:end, "\n", 1);
+METH Text(code+ @ CodeT, =:code, text) code:buffer:insert(code:end, text, text:length);
+METH Text(code+ @ CodeT, =:html, text) code:buffer:insert(code:end, text, text:length);
+
+METH EnterBlock(t+ @ T, =:code, info, lang) ();
+METH LeaveBlock(t+ @ CodeT, =:code, info, lang) ();
+
+METH EnterSpan(t+ @ T, tag) t:node <- Xml.New($, tag);
+METH LeaveSpan(t+ @T) t:node <- $:parent;
+
+METH EnterSpan(t+ @ T, =:a, href, title) Xml.New(t:node, :a, {"href" IS href}, [title]);
+METH LeaveSpan(t+ @ T, =:a) NIL;
+
+METH EnterSpan(t+ @ T, =:img, src, title) Xml.New(t:node, :img, {"src" IS src, "alt" IS title});
+METH LeaveSpan(t+ @ T, =:img) NIL;
+
+METH EnterSpan(t+ @ T, =:math) NIL;
+METH LeaveSpan(t+ @ T, =:math) NIL;
+
+METH Text(t+ @ T, =:text, text) t:node:append(text);
+METH Text(t+ @ T, =:br) Xml.New(t:node, :br);
+
+METH Text(t+ @ T, =:code, text) ();
+
+METH Text(t+ @ T, =:math, text) ();
+
+METH Text(t+ @ T, =:html, text) (
+	text:skip(" \t\r\n") // FAIL;
+	text:begins("</") => (
+		t:node <- $:parent;
+	) // text:ends("/>") => (
+		VAR node <- Xml.LoadString(text, Xml.HtmlEntities);
+		t:node:append(node);
+	) // (
+		VAR node <- Xml.LoadString(text[1, -1] + "/>", Xml.HtmlEntities);
+		t:node:append(node);
+		t:node <- node;
+	);
+);
+
+DEF New!() (
+	VAR t <- T();
+	t:level <- 0;
+	t:root <- Xml.New(:body);
+	t:node <- t:root;
+	VAR parser <- Markdown.Parser.New(Markdown.Parser.Flags.Table + Markdown.Parser.Flags.Strikethrough);
+	parser:user_data <- t;
+	parser:enter_block <- EnterBlock;
+	parser:leave_block <- LeaveBlock;
+	parser:enter_span <- EnterSpan;
+	parser:leave_span <- LeaveSpan;
+	parser:text <- Text;
+	t:parser <- parser;
+	RET t;
+);
+
+END Render.

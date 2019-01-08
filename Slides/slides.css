@@ -1,0 +1,277 @@
+* {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: Roboto;
+}
+
+.title-slide {
+	text-align: center;
+}
+
+.title-slide .title {
+	font-size: 10vh;
+	margin-top: 1em;
+	padding-top: 2em;
+	background-color: orange;
+}
+
+.title-slide .subtitle {
+	font-size: 5vh;
+	background-color: orange;
+	padding-bottom: 0.5em;
+}
+
+.title-slide, .slide {
+	position: absolute;
+	height: 100%;
+	width: 100%;
+	transition: opacity 0.5s;
+	z-index: 1;
+}
+
+.title-slide.hidden, .slide.hidden {
+	opacity: 0;
+	z-index: 0;
+}
+
+.slide .title {
+	font-size: 3.8vh;
+	background-color: orange;
+	padding: 2vh 1vh 2vh 4vh;
+	height: 8vh;
+}
+
+.slide .body {
+	position: absolute;
+	top: 8vh;
+	height: 82vh;
+	left: 0;
+	right: 0;
+	font-size: 3vh;
+	padding: 3vh;
+	color: darkblue;
+	overflow: auto;
+}
+
+.slide .footer {
+	position: absolute;
+	bottom: 0;
+	height: 10vh;
+	width: 100%;
+	border-top: 2px solid orange;
+}
+
+.slide ol.footer {
+	list-style: none;
+	counter-reset: li;
+	padding: 1vh 1vh 1vh 4vh;
+	font-size: 3vh;
+	display: flex;
+}
+
+.slide ol.footer li {
+	margin: 0.5em 0 0.5em 2em;
+	counter-increment: li;
+}
+
+.slide ol.footer li::before {
+	content: counter(li) ".";
+	color: red;
+	display: inline-block;
+	width: 1em;
+	margin-left: -1.5em;
+	margin-right: 0.5em;
+	text-align: right;
+}
+
+.slide .body p {
+	margin-bottom: 0.5em;
+}
+
+.slide .body sup.footnote {
+	color: red;
+}
+
+.slide .body ul {
+	list-style: none;
+}
+
+.slide .body ul > li {
+	margin: 0.5em 0 0.5em 1em;
+}
+
+.slide .body ul > li::before {
+	content: "\2022";
+	font-size: 200%;
+	vertical-align: -0.2em;
+	margin-right: 0.25em;
+	line-height: 0;
+	color: orange;
+}
+
+.slide .body ol {
+	list-style: none;
+	counter-reset: li;
+}
+
+.slide .body ol > li {
+	margin: 0.5em 0 0.5em 2em;
+	counter-increment: li;
+}
+
+.slide .body ol > li::before {
+	content: counter(li) ".";
+	display: inline-block;
+	width: 1em;
+	margin-left: -1.5em;
+	margin-right: 0.5em;
+	text-align: right;
+	color: orange;
+}
+
+.slide .body dl {
+	list-style: none;
+}
+
+.slide .body dl > dt {
+	margin: 0.5em 0 0.5em 0em;
+	background-color: #ffa50040;
+}
+
+.slide .body dl > dt::before {
+	content: ".";
+	width: 0.5em;
+	background-color: orange;
+	margin-right: 0.25em;
+	color: orange;
+}
+
+.slide .body dl > dd {
+	margin: 0.5em 0 0.5em 1em;
+	line-height: 1.3em;
+}
+
+.slide .body table {
+	width: 90%;
+	margin: 1em 2em 1em 2em;
+	border-collapse: collapse;
+	font-size: 100%;
+}
+
+.slide .body table th {
+	text-align: left;
+	border-bottom: 1px solid orange;
+	padding: 0.25em;
+}
+
+.slide .body table td {
+	padding: 0.25em;
+}
+
+.slide .body div.folders {
+	font-family: "Fira Mono";
+	font-size: 100%;
+}
+
+.slide .body div.folders div {
+	list-style: none;
+	padding-left: 0;
+	margin: 0 0 0 2em;
+	position: relative;
+}
+
+.slide .body div.folders div:not(:last-child):before {
+	position: absolute;
+	content: "";
+	height: 100%;
+	border-left: 1px solid black;
+	left: -1.5em;
+	top: 0;
+}
+
+.slide .body div.folders div:last-child:before {
+	position: absolute;
+	content: "";
+	height: 0.6em;
+	border-left: 1px solid black;
+	left: -1.5em;
+	top: 0;
+}
+
+.slide .body div.folders div:after {
+	position: absolute;
+	content: "";
+	height: 0.6em;
+	width: 1em;
+	border-bottom: 1px solid black;
+	left: -1.5em;
+	top: 0;
+}
+
+.slide .body .columnsl{
+	display: flex;
+	flex-direction: row;
+	height: 74%;
+}
+
+.slide .body .columnsl> *:first-child {
+	flex: 35% 1 1;
+	padding-right: 1em;
+}
+
+.slide .body .columnsl> *:first-child >  {
+	margin-left: -1em;
+}
+
+.slide .body .columnsl> *:last-child {
+	flex: 65% 1 1;
+	padding-left: 1em;
+	border-left: 1px dashed orange;
+}
+
+.slide .body .columnsr {
+	display: flex;
+	flex-direction: row;
+	height: 74%;
+}
+
+.slide .body .columnsr > *:first-child {
+	flex: 65% 1 1;
+	padding-right: 1em;
+}
+
+.slide .body .columnsr > *:first-child >  {
+	margin-left: -1em;
+}
+
+.slide .body .columnsr > *:last-child {
+	flex: 35% 1 1;
+	padding-left: 1em;
+	border-left: 1px dashed orange;
+}
+
+.slide .body .columns {
+	display: flex;
+	flex-direction: row;
+	height: 74%;
+}
+
+.slide .body .columns > *:first-child {
+	flex: 50% 1 1;
+	padding-right: 1em;
+}
+
+.slide .body .columns > *:first-child >  {
+	margin-left: -1em;
+}
+
+.slide .body .columns > *:last-child {
+	flex: 50% 1 1;
+	padding-left: 1em;
+	border-left: 1px dashed orange;
+}
+

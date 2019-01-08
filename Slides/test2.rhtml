@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"
+    "http://www.w3.org/TR/MathML2/dtd/xhtml-math11-f.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+\_include_("code.rinc");
+\_include_("slides.rinc");
+</head>
+<body>
+<div class="title-slide hidden">
+	<div class="title">Rabs</div>
+	<div class="subtitle">Technical Overview</div>
+</div>
+
+\begin(slide, "Introduction to Rabs");
+\begin(md);
+Rabs is a build automation tool originally created to build Wrapl but designed to be reusable for most build tasks.
+
+1. Written in plain C code and using only two external libraries.
+1. Supports large projects with any folder depth.
+1. Includes a complete scripting language for complex build processes.
+1. Rebuilds *only as required*, using SHA256 checksums to detect if something has actually changed.
+1. Checksums the build functions themselves to ensure that targets are rebuilt if any of the build functions change.
+1. Runs with multiple threads (configurable on the command line).
+1. Build variables can be defined on the command line allowing easy building of different configurations.
+
+Rabs is designed to be fast: building Wrapl involves parsing 54 \lit("_minibuild_"); scripts which define over 12,000 targets that need to be checked for updating. A no-op rebuild test takes under 1 second.
+\end(md);
+\end(slide);
+
+\begin(slide, "Test Code");
+\begin(code, "wrapl");
+MOD MarkdownTest;
+
+IMP IO.Terminal USE Out;
+IMP Markdown.Parser;
+
+DEF Print(args*) (
+	Out:write(args:length);
+	EVERY Out:writes(' <{1 SKIP args:values}>');
+	Out:write("\;n");
+);
+
+VAR parser <- Parser.New(NIL);
+parser:enter_block <- Print;
+parser:leave_block <- Print;
+parser:enter_span <- Print;
+parser:leave_span <- Print;
+parser:text <- Print;
+
+parser:write(>>EOI
+## Header &amp; Stuff
+
+* A
+* B
+* C
+
+---
+
+~~~ this is a test
+int main() {
+
+}
+~~~
+EOI);
+
+END MarkdownTest.
+\end(code);
+\end(slide);
+
+\begin(slide, "Test Code 2");
+\begin(code, "python");
+import keras.models
+
+model = models.Model()
+model.fit(100, "hello")
+\end(code);
+
+<p>Here is some maths \math("f(x) = \\int_{a}^{b} \\left(\\frac{x^2 + 10}{5}\\right)^4 dx");</p>
+\end(slide);
+
+<style>\(
+	VAR style, class;
+	EVERY code_styles:loop(style, class) DO out:write('\n.{class} \{ {style} }');
+);</style>
+</body>
+</html>
