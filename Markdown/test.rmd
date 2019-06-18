@@ -1,8 +1,52 @@
+\IMP Fmt.LaTeX.iTeX;
+\IMP Fmt.Xml;
+\IMP IO.Buffer;
+\IMP IO.Terminal USE Out;
+\IMP Std.String;
+\IMP Util.Base64;
+\IMP Gir.Cairo;
+\DEF math(text) out:write(iTeX.ToMathML('${text:map("$", "\\")}$'));
+\METH begin(=math) push(Buffer.New());
+\METH end(=math) (
+	VAR buffer <- pop();
+	out:write(iTeX.ToMathML('$${buffer:rest:map("$", "\\")}$$'));
+);
+\DEF draw(width, height, callback) (
+	VAR surface <- Cairo.Surface.ImageSurfaceCreate(Cairo.Format.Argb32, width, height);
+	VAR cairo <- Cairo.Cairo.Create(surface);
+	callback(cairo);
+	VAR buffer <- Buffer.New();
+	surface:write_to_png_stream(<buffer, data, length> (
+		buffer:write(data, length);
+		RET Cairo.Status.Success;
+	), buffer);
+	out:write('<img width="{width}" height="{height}" src="data:image/png;base64,{Base64.Encode(buffer:rest)}"/>');
+);
+\DEF id(text) (
+	VAR xml <- Xml.LoadString(iTeX.ToMathML('${text:map("$", "\\")}$'));
+	VAR id <- '$ID{ids:size}$';
+	ids:insert(id, xml);
+	out:write(id);
+);
+\DEF head() ();
+\METH begin(=head) push(Buffer.New() \ $:write("<head>"));
+\METH end(=head) (
+	VAR buffer <- pop();
+	buffer:write('</head>');
+	VAR xml <- Xml.Load(buffer);
+	EVERY document:head:append(xml:content:values);
+);
+
+\begin(head);
+<title>Rabs Technical Overview</title>
+\end(head);
+
 # About
 
 ## About
 
 Wrapl is a high level, dynamically typed interpreted programming language.
+Here's some new inline maths: \math("f(x) = \\int_{a}^{b} \\left(\\frac{x^2 + 10}{5}\\right)^4 dx");.
 
 ## Features
 
@@ -12,7 +56,7 @@ Wrapl is a high level, dynamically typed interpreted programming language.
 * Functional closures: Functions in Wrapl are first-class objects which may passed to other functions or stored in variables. Functions can both read and write variables declared in surrounding scopes.
 * Goal-directed: Every expression in Wrapl can produce 0, 1, or more values. An expression which can produce more than 1 value may be resumed to produce its next value.
 
-For some sample Wrapl code, <b>check</b> out the [samples pages](samples.html).
+For some sample Wrapl code, `check` out the [samples pages](samples.html).
 
 ## Sample
 
@@ -57,9 +101,41 @@ END MarkdownTest.
 ### Also
 
 ``` wrapl
-\IMP IO.File;
-\WITH file <- File.Open("Render.wrapl", File.Flag.Read + File.Flag.Text) DO file:copy(out);
+IMP IO.File;
+WITH file <- File.Open("Render.wrapl", File.Flag.Read + File.Flag.Text) DO file:copy(out);
 ```
+
+### Images
+
+This should be an image:
+
+\draw(256, 256; cairo) (
+	cairo:rectangle(0.0, 0.0, 256.0, 256.0);
+	cairo:set_source_rgba(1.0, 0.0, 0.0, 1.0);
+	cairo:stroke;
+);
+
+Inline code looks like this `Out:write("Hello world");`.
+
+### Header code: `MOD Test; \id("x^2");:test; END Test.`
+
+### Maths \math("x^2 + 1");
+
+``` wrapl
+VAR \id("x_1"); <- 200;
+```
+
+This is an equation, hopefully: \math("$int_{a}^{b} $left($frac{x^2 + 10}{5}$right)^4 dx");. And this should be a block equation:
+\begin(math);
+A $coloneqq $begin{bmatrix}
+	x_{11}       & x_{12} & x_{13} & $dots & x_{1n} $$
+	x_{21}       & x_{22} & x_{23} & $dots & x_{2n} $$
+	x_{21}       & x_{22} & x_{23} & $dots & x_{2n} $$
+	x_{21}       & x_{22} & x_{23} & $dots & x_{2n} $$
+	$vdots      & $vdots & $vdots & $ddots & $vdots $$
+	x_{d1}       & x_{d2} & x_{d3} & $dots & x_{dn}
+	$end{bmatrix}
+\end(math);
 
 ## Status
 

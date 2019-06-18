@@ -1,0 +1,17 @@
+MOD Test;
+
+IMP IO.Terminal USE Out;
+IMP IO.File;
+IMP .Xe;
+
+VAR test <- File.Open("test.xe", File.Flag.Read);
+
+VAR document <- Xe.DecodeString(test:rest);
+
+test:close;
+
+VAR expanded <- Xe.Expand(document);
+
+Out:write("Done.");
+
+END Test.

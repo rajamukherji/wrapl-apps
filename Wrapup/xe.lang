@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+ Author: Raja Mukherji
+
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+-->
+<language id="xe" _name="Xe" version="2.0" _section="Markup">
+  <metadata>
+    <property name="mimetypes">text/x-xe</property>
+    <property name="globs">*.xe</property>
+  </metadata>
+
+  <styles>
+    <style id="function" _name="Function" map-to="def:function"/>
+    <style id="symbol" _name="Symbol" map-to="def:builtin"/>
+    <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+    <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+    <style id="escape" _name="Escaped Character" map-to="def:special-char"/>
+  </styles>
+
+  <definitions>
+    <context id="escape" style-ref="escape">
+      <match>\\((\\|"|'|n|t|\$|r|\{|&lt;|&gt;)|[0-7]{1,3}|x[0-9a-fA-F]{1,2})</match>
+    </context>
+    <context id="tag">
+	  <start>(&lt;)([^ \n\r\t:|&gt;]+)</start>
+	  <end>(&gt;)</end>
+	  <include>
+	    <context sub-pattern="1" where="start" style-ref="def:operator"/>
+		<context sub-pattern="2" where="start" style-ref="def:function"/>
+		<context sub-pattern="3" where="start" style-ref="def:operator"/>
+        <context sub-pattern="1" where="end" style-ref="def:operator"/>
+        <context ref="escape"/>
+        <context ref="xe"/>
+	  </include>
+	</context>
+	<context id="attribute">
+	  <match>(\w+)(=)</match>
+	  <include>
+	    <context sub-pattern="1" style-ref="def:keyword"/>
+		<context sub-pattern="2" style-ref="def:operator"/>
+      </include>
+	</context>
+	<context id="variable" style-ref="keyword">
+	  <match>&lt;\\$.*&gt;</match>
+	</context>
+    <context id="xe">
+      <include>
+	    <context ref="tag"/>
+	    <context ref="attribute"/>
+	    <context ref="variable"/>
+      </include>
+    </context>
+  </definitions>
+</language>

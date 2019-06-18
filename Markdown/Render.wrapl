@@ -2,18 +2,21 @@ MOD Render;
 
 IMP IO.Terminal USE Out;
 IMP Fmt USE Markdown, Xml;
+IMP Fmt.LaTeX.iTeX;
 IMP Wrapl.Preproc;
 IMP Sys.Program USE Args;
 IMP IO.File;
 IMP IO.Buffer;
 IMP Gir USE Gtk, GtkSource;
+IMP Std.String;
 
-DEF T <[] level, root, head, node>;
+DEF T <[] level, root, head, styles, node>;
 
 METH :init(t @ T) (
 	t:level <- 0;
 	t:root <- Xml.New(:html, {"xmlns" IS "http://www.w3.org/1999/xhtml", "xml:lang" IS "en", "lang" IS "en"});
 	t:head <- Xml.New(t:root, :head);
+	t:styles <- {}:deffun(; style, styles) 'code{styles:size}';
 	t:node <- Xml.New(t:root, :body);
 );
 
@@ -35,7 +38,7 @@ METH EnterBlock(t+ @ T, =:h, level) (
 	DEF h [:h1, :h2, :h3, :h4, :h5, :h6];
 	level <= t:level => t:node <- $:parent;
 	t:level <- level;
-	t:node <- Xml.New($, :section);
+	t:node <- Xml.New($, :section, {"class" IS 'level-{level}'});
 	t:node <- Xml.New($, h[level]);
 );
 
@@ -53,18 +56,18 @@ METH Text(code+ @ CodeT, =:html, text) code:buffer:insert(code:end, text, text:l
 
 VAR style_name <- "base16-google-light-2";
 
+DEF language_manager <- GtkSource.LanguageManager.GetDefault();
+DEF languages {}:deffun(<id> language_manager:get_language(id));
+DEF style_manager <- GtkSource.StyleSchemeManager.GetDefault();
+DEF styles {}:deffun(<id> style_manager:get_scheme(id));
+DEF ids {};
+
 METH EnterBlock(t+ @ T, =:code, info, lang) (
-	DEF language_manager <- GtkSource.LanguageManager.GetDefault();
-	DEF languages {}:deffun(<id> language_manager:get_language(id));
-	DEF style_manager <- GtkSource.StyleSchemeManager.GetDefault();
-	DEF styles {}:deffun(<id> style_manager:get_scheme(id));
 	VAR language <- languages[lang];
-	--Out:write('language = {language:get_name}\n');
 	VAR buffer <- GtkSource.Buffer.NewWithLanguage(language);
 	buffer:set_highlight_syntax(:true);
 	VAR style <- styles[style_name];
 	buffer:set_style_scheme(style);
-	--Out:write('style = {style:get_name}\n');
 	VAR end <- Gtk.TextIter._Alloc();
 	buffer:get_end_iter(end);
 	t <- CodeT($, buffer, end);
@@ -77,34 +80,47 @@ METH LeaveBlock(t+ @ CodeT, =:code, info, lang) (
 	buffer:get_start_iter(start);
 	buffer:ensure_highlight(start, t:end);
 	VAR tag_table <- buffer:get_tag_table;
-	--tag_table:foreach(<tag> Out:write('Found a tag!\n'), NIL);
 	VAR char, tags, tag;
-	--VAR all_tags <- {};
 	REP (
 		char <- start:get_char;
 		UNTIL char = 0;
 		tags <- start:get_toggled_tags(:false);
-		--EVERY all_tags:insert(tags:values);
-		--Out:write('{char:chr} -> -{tags:length} / ');
 		EVERY tag <- tags:values DO (
 			tag:get_property("foreground-set") == :true => (
 				xml <- $:parent;
 			);
 		);
 		tags <- start:get_toggled_tags(:true);
-		--EVERY Out:write('tag:name = {tags:values:get_property("name")}\n');
-		--EVERY all_tags:insert(tags:values);
-		--Out:write('+{tags:length}\n');
 		EVERY tag <- tags:values DO (
 			tag:get_property("foreground-set") == :true => (
-				--Out:write('\t{tag:get_property("foreground-rgba"):to_string}\n');
-				xml <- Xml.New($, :span, {"style" IS 'color:{tag:get_property("foreground-rgba"):to_string};'});
+				VAR class <- t:container:styles['color:{tag:get_property("foreground-rgba"):to_string};'];
+				xml <- Xml.New($, :span, {"class" IS class});
 			);
 		);
 		xml:append(char:chr);
 		WHILE start:forward_char;
 	);
-	--Out:write('#tags = {all_tags:size}\n');
+	VAR content <- [], child;
+	EVERY child <- xml:content:values DO (
+		child IN String.T => (
+			VAR i <- 1, j;
+			REP (WHILE j <- child:find("$ID", i);
+				child[j + 3] IN "0123456789" => (
+					i < j => content:put(child[i, j]);
+					i <- child:find("$", j + 3) + 1;
+					content:put(ids:delete(child[j, i]));
+				) // (
+					content:put(child[i, j + 3]);
+					i <- j + 3;
+				);
+			);
+			j <- child:length + 1;
+			i < j => content:put(child[i, j]);
+		) // (
+			content:put(child);
+		);
+	);
+	xml:content <- content;
 	t <- $:container;
 );
 
@@ -117,12 +133,86 @@ METH LeaveSpan(t+ @ T, =:a) NIL;
 METH EnterSpan(t+ @ T, =:img, src, title) Xml.New(t:node, :img, {"src" IS src, "alt" IS title});
 METH LeaveSpan(t+ @ T, =:img) NIL;
 
+METH EnterSpan(t+ @ T, =:math) NIL;
+METH LeaveSpan(t+ @ T, =:math) NIL;
+
 METH Text(t+ @ T, =:text, text) t:node:append(text);
 METH Text(t+ @ T, =:br) Xml.New(t:node, :br);
-METH Text(t+ @ T, =:code, text) Xml.New(t:node, :code, text);
+
+VAR code_language <- "wrapl";
+METH Text(t+ @ T, =:code, text) (
+	VAR language <- languages[code_language];
+	VAR buffer <- GtkSource.Buffer.NewWithLanguage(language);
+	buffer:set_highlight_syntax(:true);
+	VAR style <- styles[style_name];
+	buffer:set_style_scheme(style);
+	VAR end <- Gtk.TextIter._Alloc();
+	buffer:get_end_iter(end);
+	buffer:insert(end, text, text:length);
+	VAR root <- Xml.New(t:node, :code), xml <- root;
+	VAR start <- Gtk.TextIter._Alloc();
+	buffer:get_start_iter(start);
+	buffer:ensure_highlight(start, end);
+	VAR tag_table <- buffer:get_tag_table;
+	VAR char, tags, tag;
+	REP (
+		char <- start:get_char;
+		UNTIL char = 0;
+		tags <- start:get_toggled_tags(:false);
+		EVERY tag <- tags:values DO (
+			tag:get_property("foreground-set") == :true => (
+				xml <- $:parent;
+			);
+		);
+		tags <- start:get_toggled_tags(:true);
+		EVERY tag <- tags:values DO (
+			tag:get_property("foreground-set") == :true => (
+				VAR class <- t:styles['color:{tag:get_property("foreground-rgba"):to_string};'];
+				xml <- Xml.New($, :span, {"class" IS class});
+			);
+		);
+		xml:append(char:chr);
+		WHILE start:forward_char;
+	);
+	xml <- root;
+	VAR content <- [], child;
+	EVERY child <- xml:content:values DO (
+		child IN String.T => (
+			VAR i <- 1, j;
+			REP (WHILE j <- child:find("$ID", i);
+				child[j + 3] IN "0123456789" => (
+					i < j => content:put(child[i, j]);
+					i <- child:find("$", j + 3) + 1;
+					content:put(ids:delete(child[j, i]));
+				) // (
+					content:put(child[i, j + 3]);
+					i <- j + 3;
+				);
+			);
+			j <- child:length + 1;
+			i < j => content:put(child[i, j]);
+		) // (
+			content:put(child);
+		);
+	);
+	xml:content <- content;
+);
+
+METH Text(t+ @ T, =:math, text) (
+	t:node:append(Xml.LoadString(iTeX.ToMathML('${text:map(":", "\\")}$'), Xml.HtmlEntities));
+);
+
 METH Text(t+ @ T, =:html, text) (
+	text:skip(" \t\r\n") // FAIL;
 	text:begins("</") => (
 		t:node <- $:parent;
+	) // text:ends("/>") => (
+		VAR node <- Xml.LoadString(text);
+		node:tag == :wrapl => (
+			code_language <- node.code_language;
+		) // (
+			t:node:append(node);
+		);
 	) // (
 		VAR node <- Xml.LoadString(text[1, -1] + "/>");
 		t:node:append(node);
@@ -131,7 +221,7 @@ METH Text(t+ @ T, =:html, text) (
 );
 
 VAR t <- T:new;
-VAR parser <- Markdown.Parser.New(NIL);
+VAR parser <- Markdown.Parser.New(Markdown.Parser.Flags.Table + Markdown.Parser.Flags.Strikethrough);
 parser:user_data <- t;
 parser:enter_block <- EnterBlock;
 parser:leave_block <- LeaveBlock;
@@ -154,17 +244,21 @@ REP (WHILE i <= Args:length;
 	i <- $ + 1;
 );
 
-
 VAR buffer <- Buffer.New();
 VAR preproc <- Preproc.New(buffer, [], :true);
+preproc:def("defines", {});
+preproc:def("document", t);
+preproc:def("lang"; l) code_language <- l;
+preproc:def("ids", ids);
 VAR input <- File.Open(input_file_name, File.Flag.Read + File.Flag.Text);
 preproc:include(input, :true);
 preproc:process;
 input:close;
 
-preproc:def("defines", {});
-
 parser:parse(buffer:rest);
+
+VAR class, style;
+Xml.New(t:head, :style, ALL t:styles:loop(style, class) & '\n.{class} \{ {style} }');
 
 Xml.SaveFile(output_file_name, t:root);
 

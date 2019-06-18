@@ -1,0 +1,31 @@
+<document
+	title="Title"
+|
+<do:
+	IMP IO.Terminal USE Out;
+	Out:write("Hello world");
+>
+<include file="utils.xe">
+
+<for var="x" from=1 to=10|
+	<test:x = <$x>>
+>
+
+<define name="test3"|<do:
+	ALL <inline style=<$colour>:Inline> | content:values:upper;
+>>
+
+<test colour="red":Hello world>
+
+<graph:
+	A -\> B;
+	B -\> C;
+>
+
+<math:x ^ 2 + 7 * x - 1>
+
+<list|
+	<item:Item 1>
+	<item:Item 2>
+>
+>
