@@ -4,7 +4,8 @@
 	VAR to \<- attributes.to;
 	VAR content2 \<- [], attributes2 \<- {var};
 	EVERY attributes2[var] \<- from:to(to) DO (
-		Append(content2, Eval(content:values, attributes2, []));
+		EVERY Append(content2, Eval(content:values, attributes2, []));
 	);
 	RET content2; 
 >>
+<define name="text"|<do:SUM content:values IN `?""`>>

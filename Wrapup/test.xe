@@ -1,6 +1,4 @@
-<document
-	title="Title"
-|
+<document title="Title"|
 <do:
 	IMP IO.Terminal USE Out;
 	Out:write("Hello world");

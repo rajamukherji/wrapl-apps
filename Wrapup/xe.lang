@@ -30,6 +30,9 @@
     <style id="keyword" _name="Keyword" map-to="def:keyword"/>
     <style id="keyword" _name="Keyword" map-to="def:keyword"/>
     <style id="escape" _name="Escaped Character" map-to="def:special-char"/>
+    <style id="floating-point" _name="Floating point number" map-to="def:floating-point"/>
+    <style id="decimal" _name="Decimal number" map-to="def:decimal"/>
+    <style id="string" _name="String" map-to="def:string"/>
   </styles>
 
   <definitions>
@@ -38,30 +41,63 @@
     </context>
     <context id="tag">
 	  <start>(&lt;)([^ \n\r\t:|&gt;]+)</start>
-	  <end>(&gt;)</end>
+	  <end>&gt;</end>
 	  <include>
 	    <context sub-pattern="1" where="start" style-ref="def:operator"/>
 		<context sub-pattern="2" where="start" style-ref="def:function"/>
-		<context sub-pattern="3" where="start" style-ref="def:operator"/>
-        <context sub-pattern="1" where="end" style-ref="def:operator"/>
+		<context sub-pattern="0" where="end" style-ref="def:operator"/>
+        <context ref="attribute"/>
+        <context ref="body"/>
         <context ref="escape"/>
-        <context ref="xe"/>
+        <context ref="tag"/>
+        <context ref="variable"/>
 	  </include>
 	</context>
+	<context id="body" once-only="true" style-ref="def:operator">
+	  <match>[:|]</match>
+	</context>
 	<context id="attribute">
-	  <match>(\w+)(=)</match>
+	  <start>(\w+)(=)</start>
+	  <end>\w|[:|]</end>
 	  <include>
-	    <context sub-pattern="1" style-ref="def:keyword"/>
-		<context sub-pattern="2" style-ref="def:operator"/>
+	    <context sub-pattern="1" where="start" style-ref="def:keyword"/>
+		<context sub-pattern="2" where="start" style-ref="def:operator"/>
+		<context sub-pattern="0" where="end" style-ref="def:operator"/>
+		<context ref="variable"/>
+	  	<context ref="float"/>
+		<context ref="decimal-number"/>
+		<context ref="string"/>
+		<context ref="tag"/>
       </include>
 	</context>
-	<context id="variable" style-ref="keyword">
+	<context id="float" style-ref="floating-point">
+      <match extended="true">
+        (?&lt;![\w\.])
+        ([0-9]+[Ee][+-]?[0-9]+ |
+         ([0-9]*\.[0-9]+ | [0-9]+\.[0-9]*)([Ee][+-]?[0-9]+)?)
+        (?![\w\.])
+      </match>
+    </context>
+    <context id="decimal-number" style-ref="decimal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        [+-]?([1-9][0-9]*|0)
+        (?![\w\.])
+      </match>
+    </context>
+    <context id="string" style-ref="string">
+      <start>"</start>
+      <end>"</end>
+      <include>
+        <context ref="escape"/>
+      </include>
+    </context>
+	<context id="variable" style-ref="symbol">
 	  <match>&lt;\\$.*&gt;</match>
 	</context>
     <context id="xe">
       <include>
 	    <context ref="tag"/>
-	    <context ref="attribute"/>
 	    <context ref="variable"/>
       </include>
     </context>

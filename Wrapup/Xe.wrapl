@@ -173,17 +173,7 @@ Defines:insert(:do; attributes, content) (
 DEF ParseNode(stream) (
 	VAR tag <- stream:readi(0, " \t\r\n:|>?") | FAIL;
 	VAR buffer <- Buffer.New();
-	tag = ("text:" | ":") => (
-		REP (
-			VAR text <- stream:readi(0, ">\\") | SEND 'Error parsing text node @ {stream:tell}';
-			buffer:write(text[1, -1]);
-			WHEN text[-1] IS ">" DO (
-				RET buffer:rest;
-			) IS "\\" DO (
-				buffer:write(ReadEscape(stream));
-			);
-		);
-	) // tag[1] = "$" & tag[-1] = ">" => (
+	tag[1] = "$" & tag[-1] = ">" => (
 		RET AttributeT(tag[2, -1]);
 	) // (
 		VAR attributes <- {};
@@ -264,11 +254,13 @@ DEF NodeEval(node, attributes, content) (
 		VAR content2 <- [];
 		EVERY AppendNode(content2, NodeEval(node:content:values, attributes, content));
 		RET NodeT(node:tag, attributes2, content2);
+	) AS Number.T, String.T DO (
+		RET node;
 	) AS Function.T DO (
 		RET node(attributes, content);
 	) AS AttributeT DO (
 		node:name = "" => RET content;
-		RET attributes[node:name] | SEND 'Undefined variable {node:name}';
+		RET attributes[node:name] | node;
 	) DO (
 		RET node;
 	);
@@ -286,7 +278,7 @@ DEF Expand!(node) REP (
 		RET node;
 	) DO (
 		RET node;
-	)
+	);
 );
 
 DEF Load!(stream) (
