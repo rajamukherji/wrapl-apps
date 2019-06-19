@@ -7,9 +7,33 @@ IMP Agg USE Table, List;
 IMP Riva.Symbol;
 IMP Wrapl.Loader;
 
-DEF AttributeT <[] name>;
+DEF VariableT <[] name>;
 
 DEF NodeT <[] tag, attributes, content>;
+
+METH Loader.Image(node @ NodeT) (
+	VAR buffer <- Buffer.New();
+	buffer:write('<{node:tag}');
+	VAR attr, value; EVERY node:attributes:loop(attr, value) DO (
+		buffer:write(' {attr}={Loader.Image(value)}');
+	);
+	node:content:length = 0 => (
+		buffer:write('>');
+	) // (
+		buffer:write(node:content:values IN String.T => ':' | '|');
+		EVERY value <- node:content:values DO (
+			value IN String.T => (
+				buffer:write(value:map(["<", ">"], ["\\<", "\\>"]));
+			) // (
+				buffer:write(Loader.Image(value));
+			);
+		);
+		buffer:write('>');
+	);
+	RET buffer:rest;
+);
+
+METH Loader.Image(var @ VariableT) '<${var:name}>';
 
 DEF AppendNode(list, node) (
 	node IN List.T => (
@@ -99,7 +123,7 @@ DEF CompileInlineValue(value) (
 		source:write(']');
 	) AS NodeT DO (
 		CompileInlineNode(value);
-	) AS AttributeT DO (
+	) AS VariableT DO (
 		source:write(value:name);
 	) DO (
 		source:write(Loader.Image(value));
@@ -119,7 +143,7 @@ DEF CompileInlineNode(node) (
 		sep <- "";
 		EVERY source:write(sep) & CompileInlineNode(node:content:values) DO sep <- ", ";
 		source:write('])');
-	) AS AttributeT DO (
+	) AS VariableT DO (
 		source:write(node:name);
 	) AS String.T DO (
 		source:write(Loader.Image(node));
@@ -174,7 +198,7 @@ DEF ParseNode(stream) (
 	VAR tag <- stream:readi(0, " \t\r\n:|>?") | FAIL;
 	VAR buffer <- Buffer.New();
 	tag[1] = "$" & tag[-1] = ">" => (
-		RET AttributeT(tag[2, -1]);
+		RET VariableT(tag[2, -1]);
 	) // (
 		VAR attributes <- {};
 		VAR content <- [];
@@ -258,7 +282,7 @@ DEF NodeEval(node, attributes, content) (
 		RET node;
 	) AS Function.T DO (
 		RET node(attributes, content);
-	) AS AttributeT DO (
+	) AS VariableT DO (
 		node:name = "" => RET content;
 		RET attributes[node:name] | node;
 	) DO (

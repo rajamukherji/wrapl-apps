@@ -6,6 +6,6 @@
 	EVERY attributes2[var] \<- from:to(to) DO (
 		EVERY Append(content2, Eval(content:values, attributes2, []));
 	);
-	RET content2; 
+	RET content2;
 >>
 <define name="text"|<do:SUM content:values IN `?""`>>

@@ -9,10 +9,6 @@
 	<test:x = <$x>>
 >
 
-<define name="test3"|<do:
-	ALL <inline style=<$colour>:Inline> | content:values:upper;
->>
-
 <test colour="red":Hello world>
 
 <graph:
@@ -25,5 +21,9 @@
 <list|
 	<item:Item 1>
 	<item:Item 2>
+>
+
+<for var="i" from=1 to=10|
+	<node name=<text:N<$i>>>
 >
 >
