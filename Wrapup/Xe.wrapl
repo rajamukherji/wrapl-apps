@@ -172,6 +172,11 @@ DEF CompileMacro(node) (
 );
 
 Defines:insert(:define; attributes, content) (
+	Defines:insert(Symbol:import(attributes.name), CompileMacro(content[1]));
+	RET NIL;
+);
+
+Defines:insert(:"define*"; attributes, content) (
 	Defines:insert(Symbol:import(attributes.name), CompileMacro(content));
 	RET NIL;
 );
@@ -281,7 +286,8 @@ DEF NodeEval(node, attributes, content) (
 	) AS Number.T, String.T DO (
 		RET node;
 	) AS Function.T DO (
-		RET node(attributes, content);
+		VAR output <- node(attributes, content);
+		RET output;
 	) AS VariableT DO (
 		node:name = "" => RET content;
 		RET attributes[node:name] | node;
