@@ -7,9 +7,9 @@ IMP Agg USE Table, List;
 IMP Riva.Symbol;
 IMP Wrapl.Loader;
 
-DEF VariableT <[] name>;
+DEF VariableT! <[] name>;
 
-DEF NodeT <[] tag, attributes, content>;
+DEF NodeT! <[] tag, attributes, content>;
 
 METH Loader.Image(node @ NodeT) (
 	VAR buffer <- Buffer.New();

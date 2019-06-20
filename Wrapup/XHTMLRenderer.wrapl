@@ -1,0 +1,25 @@
+MOD XHTMLRenderer;
+
+IMP Std USE String;
+IMP Fmt.Xml;
+IMP .Xe;
+
+DEF T <[]>;
+
+METH :render(t @ T, tag, attributes, content) (
+	RET Xml.New(tag, attributes:map(;key, value) value IN String.T, ALL RenderNode(t, content:values));
+);
+
+DEF New!() T();
+
+DEF RenderNode!(t, node) (
+	WHEN node AS String.T DO (
+		RET node;
+	) AS Xe.NodeT DO (
+		RET t:render(node:tag, node:attributes, node:content);
+	) DO (
+		SEND 'Unable to render {node}';
+	);
+);
+
+END XHTMLRenderer.

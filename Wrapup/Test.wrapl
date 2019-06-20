@@ -2,7 +2,7 @@ MOD Test;
 
 IMP IO.Terminal USE Out;
 IMP IO.File;
-IMP .Xe;
+IMP .Xe, .XHTMLRenderer;
 
 VAR test <- File.Open("test.xe", File.Flag.Read);
 
@@ -11,6 +11,12 @@ VAR document <- Xe.DecodeString(test:rest);
 test:close;
 
 VAR expanded <- Xe.Expand(document);
+
+VAR renderer <- XHTMLRenderer.New();
+
+VAR xhtml <- XHTMLRenderer.RenderNode(renderer, expanded);
+
+Out:write(xhtml);
 
 Out:write("Done.");
 
