@@ -1,29 +1,35 @@
-<document title="Title"|
+<document title=<b:"Title">|
 <do:
 	IMP IO.Terminal USE Out;
 	Out:write("Hello world");
 >
 <include file="utils.xe">
 
-<for var="x" from=1 to=10|
-	<test:x = <$x>>
+<define name="test"|<span colour="blue":<$>>>
+
+<for var="x" from=1 to=4|
+	<for var="y" from=<$x> to=8|
+		<test:x = <$x>, y = <$y>>
+	>
 >
 
 <test colour="red":Hello world>
 
-<graph:
-	A -\> B;
-	B -\> C;
->
-
-<math:x ^ 2 + 7 * x - 1>
-
-<list|
-	<item:Item 1>
-	<item:Item 2>
+<for var="i" from=1 to=10|
+	<if cond=<!:<$i> = 5>|
+		<then|<node name=<!:N<$i>>:TRUE>>
+		<else|<node name=<!:N<$i>>:FALSE>>
+	>
 >
 
 <for var="i" from=1 to=10|
-	<node name=<text:N<$i>>>
+	<if cond=<!:<$i> = 5>|
+		<then|<node name=<!:N<$i>>:BLAH>>
+	>
 >
+
+<for var="i" from=1 to=10|<do:
+	<$i> = 5 =\> <test:Hello>;
+>>
+
 >

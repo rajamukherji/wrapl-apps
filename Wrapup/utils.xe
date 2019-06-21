@@ -1,3 +1,10 @@
+<do:
+IMP Std USE String;
+IMP IO.Terminal USE Out;
+>
+
+<define name="!"|<do:SUM content:values IN String.T>>
+
 <define name="for"|<do:
 	VAR var \<- attributes.var;
 	VAR from \<- attributes.from;
@@ -8,4 +15,9 @@
 	);
 	RET content2;
 >>
-<define name="text"|<do:SUM content:values IN `?""`>>
+
+<define name="if"|<do:
+	VAR code \<- (attributes.cond IN String.T) | SUM attributes.cond:content:values IN String.T;
+	VAR cond \<- Run('({code});') =\> :then // :else;
+	ALL (content:values \\ $:tag = cond):content:values;
+>>

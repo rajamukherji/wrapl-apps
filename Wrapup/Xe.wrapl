@@ -11,11 +11,11 @@ DEF VariableT! <[] name>;
 
 DEF NodeT! <[] tag, attributes, content>;
 
-METH Loader.Image(node @ NodeT) (
+METH String.Of(node @ NodeT) (
 	VAR buffer <- Buffer.New();
 	buffer:write('<{node:tag}');
 	VAR attr, value; EVERY node:attributes:loop(attr, value) DO (
-		buffer:write(' {attr}={Loader.Image(value)}');
+		buffer:write(' {attr}={value}');
 	);
 	node:content:length = 0 => (
 		buffer:write('>');
@@ -25,7 +25,7 @@ METH Loader.Image(node @ NodeT) (
 			value IN String.T => (
 				buffer:write(value:map(["<", ">"], ["\\<", "\\>"]));
 			) // (
-				buffer:write(Loader.Image(value));
+				buffer:write(String.Of(value));
 			);
 		);
 		buffer:write('>');
@@ -33,20 +33,22 @@ METH Loader.Image(node @ NodeT) (
 	RET buffer:rest;
 );
 
-METH Loader.Image(var @ VariableT) '<${var:name}>';
+METH String.Of(var @ VariableT) '<${var:name}>';
 
 DEF AppendNode(list, node) (
-	node IN List.T => (
+	WHEN node AS List.T DO (
 		EVERY AppendNode(list, node:values);
-	) // node IN String.T => (
+	) AS String.T DO (
 		list[-1] IN String.T => (
 			list[-1] <- $ + node;
 		) // (
 			list:put(node);
 		);
-	) // node IN Number.T => (
+	) AS Number.T DO (
 		list:put(String.Of(node));
-	) // node ~== NIL => (
+	) AS NodeT DO (
+		list:put(node);
+	) AS VariableT DO (
 		list:put(node);
 	);
 	RET list;
@@ -55,7 +57,7 @@ DEF AppendNode(list, node) (
 DEF Trim(string) string[string:skip(" \t\r\n"), 0] | "";
 
 DEF ReadEscape(stream) (
-	DEF escapes {"t" IS "\t", "r" IS "\r", "n" IS "\n", "\"" IS "\"", "<" IS "<", ">" IS ">"};
+	DEF escapes {"\\" IS "\\", "t" IS "\t", "r" IS "\r", "n" IS "\n", "\"" IS "\"", "<" IS "<", ">" IS ">"};
 	VAR char <- stream:read(1);
 	char = "x" => RET (Integer.Of(stream:read(2), 16)):chr;
 	RET escapes[char];
@@ -112,6 +114,10 @@ VAR session <- Loader.SessionNew(source);
 Loader.SessionDef(session, "Node", NodeT);
 Loader.SessionDef(session, "Eval", NodeEval);
 Loader.SessionDef(session, "Append", AppendNode);
+Loader.SessionDef(session, "Run"; code) (
+	source:write(code);
+	session:eval;
+);
 
 DEF Defines! {};
 
@@ -124,7 +130,7 @@ DEF CompileInlineValue(value) (
 	) AS NodeT DO (
 		CompileInlineNode(value);
 	) AS VariableT DO (
-		source:write(value:name);
+		source:write(value:name = "" => "content" // 'attributes.{value:name}');
 	) DO (
 		source:write(Loader.Image(value));
 	);
@@ -192,11 +198,15 @@ Defines:insert(:include; attributes, content) (
 );
 
 Defines:insert(:do; attributes, content) (
-	EVERY source:write(content:values);
-	REP (WHILE source:length > 0;
-		Loader.SessionEval(session);
+	--EVERY source:write(content:values);
+	VAR child; EVERY child <- content:values DO (
+		source:write(child IN String.T) | CompileInlineNode(child);
 	);
-	RET NIL;
+	VAR content2 <- [];
+	REP (WHILE source:length > 0;
+		AppendNode(content2, Loader.SessionEval(session));
+	);
+	RET content2;
 );
 
 DEF ParseNode(stream) (
@@ -286,8 +296,7 @@ DEF NodeEval(node, attributes, content) (
 	) AS Number.T, String.T DO (
 		RET node;
 	) AS Function.T DO (
-		VAR output <- node(attributes, content);
-		RET output;
+		RET node(attributes, content);
 	) AS VariableT DO (
 		node:name = "" => RET content;
 		RET attributes[node:name] | node;
