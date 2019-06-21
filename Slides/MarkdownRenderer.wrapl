@@ -60,7 +60,7 @@ METH LeaveSpan(t+ @ T, =:math) NIL;
 METH Text(t+ @ T, =:text, text) t:node:append(text);
 METH Text(t+ @ T, =:br) Xml.New(t:node, :br);
 
-METH Text(t+ @ T, =:code, text) ();
+METH Text(t+ @ T, =:code, text) t:node:append(text);
 
 METH Text(t+ @ T, =:math, text) ();
 
@@ -69,10 +69,10 @@ METH Text(t+ @ T, =:html, text) (
 	text:begins("</") => (
 		t:node <- $:parent;
 	) // text:ends("/>") => (
-		VAR node <- Xml.LoadString(text, Xml.HtmlEntities);
+		VAR node <- Xml.LoadString(text);
 		t:node:append(node);
 	) // (
-		VAR node <- Xml.LoadString(text[1, -1] + "/>", Xml.HtmlEntities);
+		VAR node <- Xml.LoadString(text[1, -1] + "/>");
 		t:node:append(node);
 		t:node <- node;
 	);

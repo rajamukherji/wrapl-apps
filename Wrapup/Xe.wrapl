@@ -20,7 +20,7 @@ METH String.Of(node @ NodeT) (
 	node:content:length = 0 => (
 		buffer:write('>');
 	) // (
-		buffer:write(node:content:values IN String.T => ':' | '|');
+		buffer:write(node:content:values IN String.T => ':' // '|');
 		EVERY value <- node:content:values DO (
 			value IN String.T => (
 				buffer:write(value:map(["<", ">"], ["\\<", "\\>"]));

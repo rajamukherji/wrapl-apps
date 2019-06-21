@@ -1,9 +1,56 @@
 <do:
-IMP Std USE String;
 IMP IO.Terminal USE Out;
+IMP Std.String;
+IMP Math.Graphviz;
+IMP Fmt.Xml;
+IMP .XHTMLRenderer;
+
+METH :render(t @ XHTMLRenderer.T, =:section, attributes, content) (
+	VAR section \<- Xml.New(:section);
+	Xml.New(section, :h2, {}, [XHTMLRenderer.Render(t, attributes.title)]);
+	EVERY section:append(XHTMLRenderer.Render(t, content:values));
+	section;
+);
+
+METH :render(t @ XHTMLRenderer.T, =:dl, attributes, content) (
+	VAR dl \<- Xml.New(:dl);
+	VAR child; EVERY child \<- content:values DO (
+		Xml.New(dl, :dt, {}, [XHTMLRenderer.Render(t, child:attributes.title)]);
+		Xml.New(dl, :dd, {}, ALL XHTMLRenderer.Render(t, child:content:values));
+	);
+	dl;
+);
+
+DEF AddGraphComponents(graph, nodes, child) (
+	WHEN child:tag IS :node DO (	
+		VAR node \<- nodes:missing(child:attributes.id, node) \<- graph:node;
+		node:set("label", (SUM child:content:values IN String.T) | child:attributes.id);
+		node:set("shape", child:attributes.shape);
+	) IS :edge DO (
+		VAR from \<- nodes:missing(child:attributes.from, from) \<- graph:node;
+		VAR to \<- nodes:missing(child:attributes.to, to) \<- graph:node;
+		graph:edge(to, from);
+	) IS :graph DO (
+		VAR subgraph \<- graph:subgraph;
+		VAR attr, value; EVERY child:attributes:loop(attr, value) DO (
+			subgraph:set("id" ~= attr, value);
+		);
+		EVERY AddGraphComponents(subgraph, nodes, child:content:values);
+	);
+);
+
+METH :render(t @ XHTMLRenderer.T, =:graph, attributes, content) (
+	VAR graph \<- Graphviz.New("graph", Graphviz.Graph.Directed);
+	graph:set(Graphviz.Kind.Graph, "rankdir", "BT");
+	graph:set(Graphviz.Kind.Node, "shape", "oval");
+	VAR nodes \<- {};
+	EVERY AddGraphComponents(graph, nodes, content:values);
+	VAR svg \<- graph:render("dot", "svg");
+	RET Xml.LoadString(svg);
+);
 >
 
-<define name="!"|<do:SUM content:values IN String.T>>
+<define name="!"|<do:SUM content:values IN `?""`>>
 
 <define name="for"|<do:
 	VAR var \<- attributes.var;
@@ -13,11 +60,20 @@ IMP IO.Terminal USE Out;
 	EVERY attributes2[var] \<- from:to(to) DO (
 		EVERY Append(content2, Eval(content:values, attributes2, []));
 	);
-	RET content2;
+	RET content2; 
 >>
 
 <define name="if"|<do:
 	VAR code \<- (attributes.cond IN String.T) | SUM attributes.cond:content:values IN String.T;
 	VAR cond \<- Run('({code});') =\> :then // :else;
 	ALL (content:values \\ $:tag = cond):content:values;
+>>
+
+<define name="let"|<do:
+	VAR attributes2 \<- attributes:map(; key, value) Run(
+		(value IN String.T) | (SUM value:content:values IN String.T)
+	);
+	VAR content2 \<- [];
+	EVERY Append(content2, Eval(content:values, attributes2, []));
+	RET content2;
 >>
