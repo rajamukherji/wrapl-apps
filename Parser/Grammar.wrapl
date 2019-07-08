@@ -1,0 +1,134 @@
+MOD Grammar;
+
+IMP IO.Terminal USE Out;
+IMP IO USE Stream;
+IMP Std USE String, Integer;
+IMP Agg USE Table, List;
+IMP Util.Regexp;
+
+DEF MatchT <[] pos, value>;
+
+DEF TermT <[]>;
+
+METH :parse(t @ TermT, string @ String.T) (
+	VAR end <- string:length + 1, match;
+	EVERY match <- t:parse(string, 1) DO (
+		match:pos = end => SUSP match:value;
+	);
+);
+
+METH :parse(t @ TermT, string @ String.T, pos @ Integer.T) SEND ':parse must be overridden';
+
+METH :prefix(t @ TermT, index @ Integer.T) SEND ':split must be overridden';
+
+DEF CompoundT <[TermT] terms>;
+
+METH :put(t @ CompoundT, term @ TermT) t:terms:put(term) => t;
+
+DEF AlternativeT <[CompoundT]>;
+
+DEF Alt!(terms*) AlternativeT(ALL terms:values);
+
+METH :"||"(a @ TermT, b @ TermT) AlternativeT([a, b]);
+METH :"||"(a @ AlternativeT, b @ TermT) AlternativeT(a:terms + [b]);
+METH :"||"(a @ TermT, b @ AlternativeT) AlternativeT([a] + b:terms);
+
+METH :parse(t @ AlternativeT, string @ String.T, pos @ Integer.T) (
+	EVERY SUSP t:terms:values:parse(string, pos);
+);
+
+METH :prefix(t @ AlternativeT) EVERY SUSP t:prefixes:keys;
+
+DEF ActionT <[TermT] term, callback>;
+
+METH :"?"(a @ TermT, callback) IS ActionT;
+
+METH :parse(t @ ActionT, string @ String.T, pos @ Integer.T) (
+	EVERY SUSP (t:callback)(t:term:parse(string, pos));
+);
+
+DEF OptionalT <[TermT] term>;
+
+DEF Opt!(term) OptionalT(term);
+
+METH :"!"(a @ TermT) IS OptionalT;
+
+METH :parse(t @ OptionalT, string @ String.T, pos @ Integer.T) (
+	EVERY SUSP t:term:parse(string, pos) | MatchT(pos, NIL);
+);
+
+DEF SequenceT <[CompoundT]>;
+
+DEF Seq!(terms*) SequenceT(ALL terms:values);
+
+METH :"+"(a @ TermT, b @ TermT) SequenceT([a, b]);
+METH :"+"(a @ SequenceT, b @ TermT) SequenceT(a:terms + [b]);
+METH :"+"(a @ TermT, b @ SequenceT) SequenceT([a] + b:terms);
+
+DEF ParseSequence(t, string, pos, i, values) (
+	VAR term <- t:terms[i] | RET MatchT(pos, values);
+	VAR match;
+	EVERY match <- term:parse(string, pos) DO (
+		EVERY SUSP ParseSequence(t, string, match:pos, i + 1, values + [match:value]);
+	);
+);
+
+METH :parse(t @ SequenceT, string @ String.T, pos @ Integer.T) (
+	EVERY SUSP ParseSequence(t, string, pos, 1, []);
+);
+
+DEF RepeatT <[TermT] term>;
+
+DEF Rep!(term) RepeatT(term);
+
+METH :"*"(a @ TermT) IS RepeatT;
+
+DEF ParseRepeat(t, string, pos, values) (
+	VAR match;
+	EVERY match <- t:term:parse(string, pos) DO (
+		EVERY SUSP ParseRepeat(t, string, match:pos, values + [match:value]);
+	);
+	RET MatchT(pos, values);
+);
+
+METH :parse(t @ RepeatT, string @ String.T, pos @ Integer.T) (
+	EVERY SUSP ParseRepeat(t, string, pos, []);
+);
+
+DEF ListT <[TermT] term, sep>;
+
+METH :"*"(a @ TermT, b @ TermT) IS ListT;
+
+DEF ParseList(t, string, pos, values) (
+	t:sep:parse(string, pos) // RET MatchT(pos, values);
+	VAR match;
+	EVERY match <- t:term:parse(string, pos) DO (
+		EVERY SUSP ParseList(t, string, match:pos, values + [match:value]);
+	);
+);
+
+METH :parse(t @ ListT, string @ String.T, pos @ Integer.T) (
+	EVERY SUSP ParseList(t, string, pos, []);
+);
+
+DEF TerminalT <[TermT]>;
+
+DEF KeywordT <[TerminalT] keyword>;
+
+DEF Key!(keyword) KeywordT(keyword);
+
+METH :parse(t @ KeywordT, string @ String.T, pos @ Integer.T) (
+	VAR end <- pos + t:keyword:length;
+	RET MatchT(end, string[pos, end] = t:keyword);
+);
+
+DEF PatternT <[TerminalT] pattern>;
+
+DEF Pat!(pattern) PatternT(Regexp.New(pattern));
+
+METH :parse(t @ PatternT, string @ String.T, pos @ Integer.T) (
+	VAR match <- t:pattern:match(string, pos) | FAIL;
+	RET MatchT(match:end, string[pos, match:end]);
+);
+
+END Grammar.

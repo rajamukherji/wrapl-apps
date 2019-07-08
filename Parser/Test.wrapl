@@ -1,0 +1,18 @@
+MOD Test;
+
+IMP .Grammar USE Alt, Seq, Key, Pat, Rep;
+
+VAR number <- Pat("[0-9]+");
+VAR whitespace <- Pat("[ \t\r\n]*");
+VAR operator <- Alt(Key("+"), Key("-"), Key("*"), Key("/"));
+
+VAR term <- Alt(number);
+
+VAR expr <- Alt();
+expr:put(Seq(term, Rep(Seq(whitespace, operator, whitespace, term))));
+
+term:put(Seq(Key("("), whitespace, expr, whitespace, Key(")")));
+
+ALL expr:parse("123 + 200");
+
+END Test.
