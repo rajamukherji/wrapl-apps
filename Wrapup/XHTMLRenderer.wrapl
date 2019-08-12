@@ -4,7 +4,7 @@ IMP Std USE String;
 IMP Fmt.Xml;
 IMP .Xe;
 
-DEF T <[]>;
+DEF T! <[]>;
 
 METH :render(t @ T, tag, attributes, content) (
 	RET Xml.New(tag, attributes:map(;key, value) value IN String.T, ALL RenderNode(t, content:values));

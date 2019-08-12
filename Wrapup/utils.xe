@@ -7,16 +7,16 @@ IMP .XHTMLRenderer;
 
 METH :render(t @ XHTMLRenderer.T, =:section, attributes, content) (
 	VAR section \<- Xml.New(:section);
-	Xml.New(section, :h2, {}, [XHTMLRenderer.Render(t, attributes.title)]);
-	EVERY section:append(XHTMLRenderer.Render(t, content:values));
+	Xml.New(section, :h2, {}, [XHTMLRenderer.RenderNode(t, attributes.title)]);
+	EVERY section:append(XHTMLRenderer.RenderNode(t, content:values));
 	section;
 );
 
 METH :render(t @ XHTMLRenderer.T, =:dl, attributes, content) (
 	VAR dl \<- Xml.New(:dl);
 	VAR child; EVERY child \<- content:values DO (
-		Xml.New(dl, :dt, {}, [XHTMLRenderer.Render(t, child:attributes.title)]);
-		Xml.New(dl, :dd, {}, ALL XHTMLRenderer.Render(t, child:content:values));
+		Xml.New(dl, :dt, {}, [XHTMLRenderer.RenderNode(t, child:attributes.title)]);
+		Xml.New(dl, :dd, {}, ALL XHTMLRenderer.RenderNode(t, child:content:values));
 	);
 	dl;
 );
@@ -79,61 +79,4 @@ METH :render(t @ XHTMLRenderer.T, =:graph, attributes, content) (
 >>
 
 <define name="code"|<do:
-	VAR language \<- languages[code:lang];
-	VAR buffer \<- GtkSource.Buffer.NewWithLanguage(language);
-	buffer:set_highlight_syntax(:true);
-	VAR style \<- styles[style_name];
-	buffer:set_style_scheme(style);
-	VAR end \<- Gtk.TextIter._Alloc();
-	buffer:get_end_iter(end);
-	VAR text \<- code:buffer:rest;
-	text \<- $[$:skip("\\n"), 0];
-	buffer:insert(end, text, text:length);
-	VAR xml \<- Xml.New(:div, {"class" IS "code"});
-	VAR start \<- Gtk.TextIter._Alloc();
-	buffer:get_start_iter(start);
-	buffer:ensure_highlight(start, end);
-	VAR tag_table \<- buffer:get_tag_table;
-	VAR char, tags, tag;
-	REP (
-		char \<- start:get_char;
-		UNTIL char = 0;
-		tags \<- start:get_toggled_tags(:false);
-		EVERY tag \<- tags:values DO (
-			tag:get_property("foreground-set") == :true =\> (
-				xml \<- $:parent;
-			);
-		);
-		tags \<- start:get_toggled_tags(:true);
-		EVERY tag \<- tags:values DO (
-			tag:get_property("foreground-set") == :true =\> (
-				VAR class \<- code_styles['color:{tag:get_property("foreground-rgba"):to_string};'];
-				xml \<- Xml.New($, :span, {"class" IS class});
-			);
-		);
-		xml:append(char:chr);
-		WHILE start:forward_char;
-	);
-	VAR content \<- [], child;
-	EVERY child \<- xml:content:values DO (
-		child IN String.T =\> (
-			VAR i \<- 1, j;
-			REP (WHILE j \<- child:find("$ID", i);
-				child[j + 3] IN "0123456789" =\> (
-					i < j =\> content:put(child[i, j]);
-					i \<- child:find("$", j + 3) + 1;
-					content:put(ids:delete(child[j, i]));
-				) // (
-					content:put(child[i, j + 3]);
-					i \<- j + 3;
-				);
-			);
-			j \<- child:length + 1;
-			i < j =\> content:put(child[i, j]);
-		) // (
-			content:put(child);
-		);
-	);
-	xml:content \<- content;
-	out:write(xml);
 >>

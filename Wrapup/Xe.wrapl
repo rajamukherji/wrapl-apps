@@ -64,8 +64,11 @@ DEF ReadEscape(stream) (
 );
 
 DEF ParseList(stream) (
-	VAR list <- [], char <- "\x00";
-	REP (WHILE char IN " \t\r\n"; char <- stream:read(1) | SEND 'Error parsing list @ {stream:tell}');
+	VAR list <- [], char <- "";
+	REP (
+		char <- stream:read(1) | SEND 'Error parsing list @ {stream:tell}';
+		WHILE char IN " \t\r\n";
+	);
 	char = "]" => RET list;
 	WHEN char IS "<" DO (
 		REP (
