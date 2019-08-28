@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "Converting"
+ccomps -Cx $1.raw | osage | gvpack | fdp -s -n2 -Txdot -o$1

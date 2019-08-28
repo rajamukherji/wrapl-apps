@@ -1,0 +1,181 @@
+MOD Model;
+
+IMP Sys.Program USE Args;
+IMP IO.Terminal USE Out;
+IMP IO USE File, Process;
+IMP Wrapl;
+IMP Std USE String, Integer, Symbol, Real;
+IMP Agg.List;
+IMP Math.Random;
+
+DEF Colour() (
+	DEF random Random.New():_seed;
+	RET '{random:generate(Real.T)} 0.5 0.8';
+);
+
+DEF EntityT <[] name, draw, attributes, relations, parents, children, colour>;
+
+DEF None EntityT("", []);
+
+METH :init(entity @ EntityT, name @ String.T, draw @ Symbol.T) (
+	entity:name <- name;
+	entity:draw <- draw;
+	entity:attributes <- [];
+	entity:relations <- [];
+	entity:parents <- [];
+	entity:children <- {}:deffun(<child> EntityT:new('{entity:name}.{child}', :true));
+	entity:colour <- draw == :true => '{0.5 + #name / 4294967296.0} 0.6 0.9' // "white";
+);
+
+METH :init(entity @ EntityT, name @ String.T, relations @ List.T) (
+	entity:name <- name;
+	entity:draw <- :true;
+	entity:attributes <- [];
+	entity:relations <- relations;
+	entity:children <- {}:deffun(<child> EntityT:new('{entity:name}.{child}', :true));
+	entity:colour <- '{0.5 + #name / 4294967296.0} 0.5 0.8';
+);
+
+DEF AttributeT <[] name, type, flags, subs>;
+
+METH :init(attribute @ AttributeT, name @ String.T, type) (
+	attribute:name <- name;
+	attribute:type <- type;
+	attribute:flags <- {};
+	attribute:subs <- [];
+);
+
+METH :has(entity @ EntityT, name @ String.T) IS <entity, name, type | None, args*> (
+	VAR attribute <- AttributeT:new(name, type);
+	VAR arg; EVERY arg <- args:values DO (
+		arg IN SubT => (
+			EVERY attribute:subs:put(arg:attributes:values);
+		) // (
+			attribute:flags:insert(arg);
+		);
+	);
+	entity:attributes:put(attribute);
+	entity;
+);
+
+METH :extends(entity @ EntityT, parent @ EntityT) (
+	entity:parents:put(parent);
+	entity;
+);
+
+METH :ref(entity @ EntityT, related @ EntityT) (
+	entity:relations:put([:ref, related]);
+	entity;
+);
+
+METH :"."(entity @ EntityT, child @ String.T) entity:children[child];
+
+DEF SubT <[] attributes>;
+
+METH :init(sub @ SubT) (
+	sub:attributes <- [];
+);
+
+METH :has(sub @ SubT, name @ String.T) IS <sub, name, type | None, args*> (
+	VAR attribute <- AttributeT:new(name, type);
+	EVERY attribute:flags:insert(args:values);
+	sub:attributes:put(attribute);
+	sub;
+);
+
+METH :has(name @ String.T) IS <name, type | None, args*> (
+	VAR sub <- SubT:new;
+	VAR attribute <- AttributeT:new(name, type);
+	EVERY attribute:flags:insert(args:values);
+	sub:attributes:put(attribute);
+	sub;
+);
+
+METH :render(entity @ EntityT) IS <entity, skip | 1> (
+	Out:write('Drawing {skip}: {entity:name}\n');
+
+	entity:children:size > 0 => (
+		out:write('\n\tsubgraph cluster{entity:name:map(["."], [""])} \{rankdir="LR";rank="max";bgcolor="gray20";\n');
+		out:write('\t\tlabel="{entity:name}";\n');
+		out:write('\t\t"{entity:name}";\n');
+		EVERY out:write('\t\t"{entity:children:values:name}";\n');
+		out:write("\t}\n\n");
+	);
+	
+	VAR index, relation; EVERY entity:relations:loop(index, relation) DO (
+		out:write('\t"{relation[2]:name}":top -> "{entity:name}":ref{index} [color="{Colour()}"];\n');
+	);
+	EVERY attribute <- entity:attributes:values DO (
+		attribute:subs:length > 0 => (
+			VAR sub; EVERY sub <- attribute:subs:values DO sub:type:draw == :true => (
+				out:write('\t"{entity:name}":"{attribute:name}.{sub:name}":e -> "{sub:type:name}" [color="{Colour()}"];\n');
+			);
+		);
+		attribute:type:draw == :true => (
+			out:write('\t"{entity:name}":{attribute:name}:e -> "{attribute:type:name}" [color="{Colour()}"];\n');
+		);
+	);
+	EVERY out:write('\t"{entity:parents:values:name}":top -> "{entity:name}" [style=dashed,color="{Colour()}"];\n');
+
+	out:write('\t"{entity:name}" [shape=none,margin=0,label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" bgcolor="black">\n\t\t<tr><td colspan="3" bgcolor="{entity:colour}" port="top"><font color="black">{entity:name[skip, 0]}</font></td></tr>\n');
+	VAR index, relation; EVERY entity:relations:loop(index, relation) DO (
+		out:write('\t\t<tr><td colspan="3" port="ref{index}"><font color="yellow">{relation[1]}</font><font color="{relation[2]:colour}"> {relation[2]:name}</font></td></tr>\n');
+	);
+	VAR attribute; EVERY attribute <- entity:attributes:values DO (
+		out:write('\t\t<tr><td rowspan="{1 + attribute:subs:length}" port="{attribute:name}" align="left">{attribute:name}</td><td colspan="2">');
+		EVERY out:writes('<font color="yellow">{attribute:flags:keys} </font>');
+		out:write('<font color="{attribute:type:colour}">{attribute:type:name}</font></td></tr>\n');
+		attribute:subs:length > 0 => (
+			VAR sub; EVERY sub <- attribute:subs:values DO (
+				out:write('\t\t\t<tr><td port="{attribute:name}.{sub:name}" align="left">{sub:name}</td><td>');
+				EVERY out:writes('<font color="yellow">{sub:flags:keys} </font>');
+				out:write('<font color="{sub:type:colour}">{sub:type:name}</font></td></tr>\n');
+			);
+		);
+	);
+	out:write('\t</table>>];\n');
+	
+	EVERY entity:children:values:render(entity:name:length + 2);
+);
+
+VAR last_relation <- 0;
+
+METH :ref(entity @ EntityT) EntityT:new('Relation{last_relation <- $ + 1}', :true):ref(entity) \ relations:put($);
+
+VAR entities <- {}:deffun(<id> EntityT:new(id, :true));
+VAR relations <- [];
+
+VAR file <- File.Open(Program.Args[1], File.Flag.Read + File.Flag.Text);
+VAR session <- Wrapl.Session.New(file);
+
+session:def("text", EntityT:new("text", :false));
+session:def("integer", EntityT:new("integer", :false));
+session:def("real", EntityT:new("real", :false));
+session:def("boolean", EntityT:new("boolean", :false));
+session:def("time", EntityT:new("time", :false));
+session:def("image", EntityT:new("image", :false));
+session:def("map", EntityT:new("map", :false));
+session:def("uuid", EntityT:new("uuid", :false));
+
+session:set_missing_id_func(<id> entities[id]);
+(
+	REP WHILE session:eval;
+	RECV msg DO Out:write(msg);
+);
+
+VAR out <- File.Open(Program.Args[1] + ".dot.raw", File.Flag.Write + File.Flag.Text);
+out:write("digraph Model {\n\tgraph[pad=1,bgcolor=black,color=white,fontcolor=white,rankdir=LR,overlap=false,splines=ortho,packMode=\"node\",outputorder=\"edgesfirst\"];\n");
+out:write('\tnode [fontcolor=white,color=white,fontname="Monospace",fontsize=16];\n');
+
+EVERY entities:values:render;
+EVERY relations:values:render;
+
+out:write("}");
+out:close;
+
+--Process.Open("osage", "-Txdot", '{Program.Args[1]}.dot', '-o{Program.Args[1]}.dot'):wait;
+Process.Open("./convert", '{Program.Args[1]}.dot'):wait;
+
+Program.Exit(0);
+
+END Model.

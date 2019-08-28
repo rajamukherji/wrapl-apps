@@ -1,0 +1,250 @@
+body {
+	background-color: white;
+}
+
+h3, h4, p {
+	margin: 0;
+}
+
+div.notice {
+	position: fixed;
+	top: 50px;
+	left: 20%;
+	right: 20%;
+	text-align: center;
+	background-color: hsl(0,80%,90%);
+	border: 2px solid hsl(0,80%,80%);
+	padding: 1em 1em 0em 1em;
+}
+
+span.object {
+	position: relative;
+	border: 1px solid #C000FF;
+	padding: 5px 5px 5px 24px;
+	margin-left: 25px;
+	display: inline-block;
+	border-radius: 4px;
+	vertical-align: middle;
+}
+
+span.object:before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -24px;
+	margin: auto;
+	height: 1.3em;
+	content: "object";
+	background-color: #C000FF;
+	color: white;
+	padding: 0px 5px 3px;
+	border-radius: 8px;
+	transform: rotate(-90deg);
+}
+
+span.array {
+	position: relative;
+	border: 1px solid #c17d11;
+	padding: 5px 5px 5px 24px;
+	margin-left: 25px;
+	display: inline-block;
+	border-radius: 4px;
+}
+
+span.array:before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -15px;
+	margin: auto;
+	height: 1.3em;
+	content: "list";
+	background-color: #c17d11;
+	color: white;
+	padding: 0px 5px 3px;
+	border-radius: 8px;
+	transform: rotate(-90deg);
+}
+
+span.set {
+	position: relative;
+	border: 1px solid #73d216;
+	padding: 5px 5px 5px 18px;
+	margin-left: 13px;
+	display: inline-block;
+	border-radius: 4px;
+}
+
+span.set:before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -14px;
+	margin: auto;
+	height: 1.3em;
+	content: "set";
+	background-color: #73d216;
+	color: white;
+	padding: 0px 5px 3px;
+	border-radius: 8px;
+	transform: rotate(-90deg);
+}
+
+span.map {
+	position: relative;
+	border: 1px solid #75507b;
+	padding: 5px 5px 5px 22px;
+	margin-left: 21px;
+	display: inline-block;
+	border-radius: 4px;
+}
+
+span.map:before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -21px;
+	margin: auto;
+	height: 1.3em;
+	content: "map";
+	background-color: #75507b;
+	color: white;
+	padding: 0px 5px 3px;
+	border-radius: 8px;
+	transform: rotate(-90deg);
+}
+
+span.map > .type {
+	display: inline-block;
+	margin: 5px auto;
+}
+
+/*span.array {
+	display: inline-block;
+	position: relative;
+	margin: 2px 6px;
+	vertical-align: middle;
+}
+
+span.array:before {
+	display: inline-block;
+	content: ".";
+	font-size: 0;
+	border-radius: 5px 0px 0px 5px;
+	border-width: 1px 0px 1px 1px;
+	border-color: black;
+	border-style: solid;
+	position: absolute;
+	top: -2px;
+	bottom: -2px;
+	left: -6px;
+	width: 5px;
+}
+
+span.array:after {
+	display: inline-block;
+	content: ".";
+	font-size: 0;
+	border-radius: 0px 5px 5px 0px;
+	border-width: 1px 1px 1px 0px;
+	border-color: black;
+	border-style: solid;
+	position: absolute;
+	top: -2px;
+	bottom: -2px;
+	right: -6px;
+	width: 5px;
+}*/
+
+span.type {
+	background-color: #f57900;
+	color: white;
+	padding: 0px 5px;
+	border-radius: 8px;
+}
+
+a.item {
+	border-radius: 0px;
+	color: white;
+	padding: 0px 5px;
+	text-decoration: none;
+}
+
+div.method {
+	border: 1px solid #000000;
+	margin: 25px 0 10px 0;
+	border-radius: 5px;
+	position: relative;
+	padding-top: 20px;
+}
+
+div.item {
+	border: 1px solid #c17d11;
+	margin: 25px 0 10px 0;
+	border-radius: 5px;
+	position: relative;
+	padding-top: 20px;
+}
+
+div.item > p, div.method > p {
+	padding: 10px;
+}
+
+div.item > h3 {
+	margin: 0;
+	padding: 5px 10px;
+	font-weight: normal;
+	border: 1px solid #c17d11;
+	background-color: white;
+	border-radius: 5px;
+	display: inline-block;
+	position: absolute;
+	top: -15px;
+	left: 5px;
+}
+
+div.method > h3 {
+	margin: 0;
+	padding: 5px 10px;
+	font-weight: normal;
+	border: 1px solid #000000;
+	background-color: white;
+	border-radius: 5px;
+	display: inline-block;
+	position: absolute;
+	top: -15px;
+	left: 5px;
+}
+
+div.parameters, div.returns, div.permissions, div.fields {
+	margin: 10px 15px;
+}
+
+div.description {
+	clear: both;
+	margin: 10px 15px;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+th {
+	color: darkgray;
+}
+
+tr + tr {
+	border-top: 1px solid lightgray;
+}
+
+td, th {
+	text-align: left;
+	padding: 4px;
+}
+
+td.name {
+	color: rgb(0, 139, 255);
+	font-style: italic;
+}
+
+

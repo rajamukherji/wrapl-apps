@@ -1,0 +1,182 @@
+MOD Main;
+
+IMP IO.Terminal USE Out;
+IMP IO USE File, Buffer;
+IMP Sys USE Program, Module;
+IMP Wrapl;
+
+DEF TypeT <[] description, required, default>;
+
+DEF NullT <[TypeT]>;
+METH :type(@NullT) DEF '<span class="type">none</span>';
+DEF null(args*) :new:apply(args:prepend(NullT));
+
+DEF ByteT <[TypeT]>;
+METH :type(@ByteT) DEF '<span class="type">byte</span>';
+DEF byte(args*) :new:apply(args:prepend(ByteT));
+
+DEF IntegerT <[TypeT]>;
+METH :type(@IntegerT) DEF '<span class="type">integer</span>';
+DEF integer(args*) :new:apply(args:prepend(IntegerT));
+
+DEF NumberT <[TypeT]>;
+METH :type(@NumberT) DEF '<span class="type">number</span>';
+DEF number(args*) :new:apply(args:prepend(NumberT));
+
+DEF BooleanT <[TypeT]>;
+METH :type(@BooleanT) DEF '<span class="type">boolean</span>';
+DEF boolean(args*) :new:apply(args:prepend(BooleanT));
+
+DEF TextT <[TypeT]>;
+METH :type(@TextT) DEF '<span class="type">text</span>';
+DEF text(args*) :new:apply(args:prepend(TextT));
+
+DEF DateT <[TypeT]>;
+METH :type(@DateT) DEF '<span class="type">date</span>';
+DEF date(args*) :new:apply(args:prepend(DateT));
+
+DEF RoleT <[TypeT]>;
+METH :type(@RoleT) DEF '<span class="type">role</span>';
+DEF role(args*) :new:apply(args:prepend(RoleT));
+
+DEF AnyT <[TypeT]>;
+METH :type(@AnyT) DEF '<span class="type">any</span>';
+DEF any(args*) :new:apply(args:prepend(AnyT));
+
+DEF IdT <[TypeT] item>;
+METH :type(t@IdT) '<a class="item type" style="background-color: hsl({#t:item % 360},50%,50%)" href="#{t:item}">#{t:item}</a>';
+DEF id(item, args*) :new:apply(args:prepend(IdT)) \ $:item <- item;
+
+DEF ArrayT <[TypeT] element>;
+METH :type(t@ArrayT) '<span class="array">{t:element:type}</span>';
+DEF array(element, args*) :new:apply(args:prepend(ArrayT)) \ $:element <- element;
+
+DEF SetT <[TypeT] element>;
+METH :type(t@SetT) '<span class="set">{t:element:type}</span>';
+DEF set(element, args*) :new:apply(args:prepend(SetT)) \ $:element <- element;
+
+DEF MapT <[TypeT] key, value>;
+METH :type(t@MapT) '<span class="map">{t:key:type} &#8658; {t:value:type}</span>';
+DEF map(key, value, args*) :new:apply(args:prepend(MapT)) \ ($:key <- key; $:value <- value);
+
+DEF ObjectT <[TypeT] fields>;
+METH :type(t@ObjectT) '<span class="object"><table>{SUM t:fields:map(<name, field> '<tr><td class="name">{name}</td><td>{field:type}</td><td>{(NIL ~== field:description) | ""}</td></tr>'):values | ''}</table></span>';
+DEF object(args*) :new:apply(args:prepend(ObjectT));
+
+DEF MethodT <[] path, description, parameters, returns, errors, permissions>;
+DEF method(args*) :new:apply(args:prepend(MethodT));
+
+DEF ItemT <[ObjectT] room, parent>;
+DEF item(room, args*) (
+	VAR item <- :new:apply(args:prepend(ItemT));
+	item:room <- room;
+	RET item;
+);
+
+DEF section(name, items*) (
+	out:write('<div><h2>{name}</h2>');
+	VAR item; EVERY item <- items:values DO (
+		item IN MethodT => (
+			out:write('
+<div class="method">
+	<h3>{item:path}</h3>
+	<div class="description">
+		<h4>Description</h4>
+		<p>{(NIL ~== item:description) | "TBD."}</p>
+	</div>
+	<div class="parameters">
+		<h4>Parameters</h4>
+		<table>
+			<tr><th>Parameter</th><th>Required</th><th>Default</th><th>Type</th><th>Description</th></tr>');
+			VAR key, value;
+			item:parameters ~= NIL => EVERY item:parameters:loop(key, value) DO (
+				out:write('
+			<tr><td class="name">{key}</td><td>{value:required == :true => 'yes' // 'no'}</td><td>{(NIL ~== value:default) | ""}</td><td>{value:type}</td><td>{(NIL ~== value:description) | ""}</td></tr>');
+			);
+			out:write('
+		</table>
+	</div>
+	<div class="returns">
+		<h4>Returns</h4>
+		<p>{item:returns == NIL => 'TBD' // '{(NIL ~== item:returns:description) | ""} {item:returns:type | NIL}'}</p>
+	</div>
+	<div class="permissions">
+		<h4>Permissions</h4>
+		
+	</div>
+</div>');
+		) // item IN ItemT => (
+			out:write('
+<div class="item">
+	<h3><a class="item" name="{item:room}" style="background-color: hsl({#item:room % 360},50%,50%)">{item:room}</a> &lt; <a class="item" href="#{item:parent}" style="background-color: hsl({#item:parent % 360},50%,50%)">{item:parent}</a></h3>
+	<div class="description">
+		<h4>Description</h4>
+		<p>{(NIL ~== item:description) | "TBD."}</p>
+	</div>
+	<div class="fields">
+		<h4>Fields</h4>
+		<table>
+			<tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr>');
+			VAR key, value;
+			item:fields ~= NIL => EVERY item:fields:loop(key, value) DO (
+				out:write('
+			<tr><td class="name">{key}</td><td>{value:required == :true => 'yes' // 'no'}</td><td>{value:type}</td><td>{(NIL ~== value:description) | ""}</td></tr>');
+			);
+			out:write('
+		</table>
+	</div>
+</div>');
+		);
+	);
+);
+
+VAR out <- File.Open("API.html", File.Flag.Write + File.Flag.Text);
+out:write(>>EOI
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="API.css"/>
+	<script type="text/javascript" src="API.js"></script>
+</head>
+<body>
+EOI);
+
+VAR log <- File.Open("API.log", File.Flag.Write + File.Flag.Text);
+VAR file <- File.Open(Program.Args[1], File.Flag.Read + File.Flag.Text);
+VAR buffer <- Buffer.New();
+buffer:write(file:rest);
+file:close;
+VAR session <- Wrapl.Session.New(buffer);
+
+session:def("section", section);
+session:def("object", object);
+session:def("method", method);
+session:def("item", item);
+session:def("null", null);
+session:def("byte", byte);
+session:def("integer", integer);
+session:def("number", number);
+session:def("boolean", boolean);
+session:def("text", text);
+session:def("date", date);
+session:def("role", role);
+session:def("any", any);
+session:def("id", id);
+session:def("array", array);
+session:def("set", set);
+session:def("map", map);
+
+REP (WHILE buffer:length > 0;
+	session:eval;
+	RECV msg DO log:writes(msg, "\n");
+);
+
+out:write(>>EOI
+</body>
+</html>
+EOI);
+
+log:close;
+
+Program.Exit(0);
+
+END Main.

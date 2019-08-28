@@ -1,0 +1,8 @@
+DataSet
+	:has("ID", uuid)
+	:has("Columns", Column, :many)
+	:has("Data", Data, :many);
+
+Column
+	:has("Name", text)
+	:has("Type", Type);

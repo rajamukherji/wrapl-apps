@@ -1,0 +1,4 @@
+section("Initialization",
+	method("init", parameters IS {})
+);
+

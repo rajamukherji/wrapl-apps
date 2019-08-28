@@ -1,0 +1,3 @@
+#!/bin/sh
+livereload &
+ls $1.api API.wrapl | entr riva -L. API $1.api

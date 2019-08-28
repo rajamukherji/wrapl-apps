@@ -1,0 +1,297 @@
+Avatar:has("Name", text):has("Picture", image);
+Media:has("Type", Media.Type);
+
+Device:has("Serial", text);
+
+User:extends(Avatar)
+	:has("Salt", text)
+	:has("Hash", text)
+	:has("Connections", User, :many,
+		:has("Conversation", Conversation)
+	)
+	:has("SystemConversations", Conversation, :many,
+		:has("Reason", text)
+	);
+User.Group:extends(Avatar)
+	:has("Members", User, :many, :has("Role", User.Role))
+	:has("Connections", Avatar, :many, :has("Conversation", Conversation))
+	:has("SystemConversations", Conversation, :many, :has("Reason", text));
+User.Role
+	:has("Name", text)
+	:has("Subordinates", User.Role, :many)
+	:has("Privileges", User.Privilege, :many)
+	:has("Type", text);
+
+Person:extends(User):extends(Consumer)
+	:has("Address", text, :optional)
+	:has("Login", text, :many)
+	:has("DOB", time);
+
+Person.ConnectionInvitation:ref(Action)
+	:has("Inviter", Person)
+	:has("Invitee", Person);
+
+-=Family:extends(Group)
+	:has("Address", text)
+	:has("Assets", Family.Asset, :many);
+Family.Asset:extends(Avatar);
+Family.Dependant:extends(Family.Asset):has("DOB", time):has("Person", Person, :optional);
+Family.Pet:extends(Family.Asset);=-
+
+Action:has("Trigger", text);
+Code:has("Code", text):has("Contact", text):has("Redeem", text):has("Data", text);
+
+Conversation
+	:has("Subject", text)
+	:has("Messages", Conversation.Message, :many)
+	:has("Users", User, :many,
+		:has("CanWrite", boolean),
+		:has("IsAdmin", boolean),
+		:has("Subject", text),
+		:has("UnreadMessages", integer, :range),
+		:has("UnreadCount", integer)
+	)
+	:has("Groups", User.Group, :many,
+		:has("Subject", text),
+		:has("Role", User.Role)
+	);
+Conversation.Message
+	:has("Author", User)
+	:has("Time", time)
+	:has("Body", text);
+
+Record:has("Time", time);
+
+Service:has("Modules", Service.Module, :many);
+Service.Module:has("Options", Service.Option, :many)
+	:has("Privileges", User.Privilege, :many)
+	:has("Views", Service.View, :many,
+		:has("Privileges", User.Privilege, :many)
+	)
+	:has("DeviceSettings", Service.DeviceSetting, :many,
+		:has("Privileges", User.Privilege, :many)
+	);
+Service.DeviceSetting:extends(User.Role)
+	:has("DefaultView", Service.View);
+
+Organization:extends(Organization.Department):extends(Supplier):extends(Consumer)
+	:has("Address", text)
+	:has("Subsidiaries", Organization, :many)
+	:has("CurrentShift", time)
+	:has("TimeZone", text)
+	:has("Departments", Organization.Department, :many);
+Organization.Agent:extends(User)
+	:has("Name", text)
+	:has("Organization", Organization)
+	:has("Link", Person, :optional);
+Organization.Team:extends(Organization.Asset):extends(User.Group)
+	:has("Agents", Organization.Agent, :many,
+		:has("Role", User.Role)
+		:has("Pin", text)
+	);
+Organization.Asset:has("Organization", Organization):has("Name", text);
+--Organization.Area:extends(Organization.Asset);
+
+Organization.Record:extends(Record):has("Organization", Organization);
+--Organization.ClockRecord:extends(Organization.Record);
+
+--Organization.CheckListTemplate:extends(Organization.Asset);
+--Organization.CheckList:extends(Organization.Record):has("Template", Organization.CheckListTemplate);
+
+Organization.Department:extends(Organization.Team)
+	:has("Services", Service, :many,
+		:has("Configuration", text)
+	):has("Devices", Device, :many,
+		:has("Setting", Service.DeviceSetting),
+		:has("Password", Organization.Credentials)
+	);
+
+Organization.Credentials:has("Team", Organization.Team):has("Salt", text):has("Hash", text);
+
+EducationProvider:ref(Organization);
+EducationProvider.Student:extends(Avatar)
+	:has("EducationProvider", EducationProvider)
+	:has("Number", text)
+	:has("Link", Person, :optional)
+	:has("Programme", EducationProvider.Programme)
+	:has("Modules", EducationProvider.Module, :many);
+EducationProvider.Programme:extends(Organization.Asset)
+	:has("Modules", EducationProvider.Module, :many);
+EducationProvider.Module:extends(Organization.Asset)
+	:has("Lecturers", Organization.Team);
+
+EducationProvider.SupportCentre:extends(Organization.Department)
+	:has("Students", EducationProvider.Student, :many,
+		:has("DataConsent", boolean)
+	)
+	:has("Events", text, :many,
+		:has("Time", time),
+		:has("Data", map)
+	)
+	:has("Tickets", text, :many,
+		:has("Student", EducationProvider.Student),
+		:has("Time", time),
+		:has("Notes", map)
+	)
+	:has("Modules", EducationProvider.Module, :many,
+		:has("Viewers", Organization.Agent, :many)
+	);
+
+EducationProvider.Tutorial:extends(Organization.Record)
+	:has("Module", EducationProvider.Module)
+	:has("Start", time)
+	:has("End", time)
+	:has("Duration", integer)
+	:has("Students", EducationProvider.Student, :many)
+	:has("Tutors", Organization.Agent, :many)
+	:has("Comments", text, :many,
+		:has("Student", EducationProvider.Student),
+		:has("Topic", EducationProvider.TutorialTopic)
+	);
+
+EducationProvider.TutorialTopic
+	:has("Author", Organization.Agent)
+	:has("Module", EducationProvider.Module)
+	:has("Name", text)
+	:has("Description", text)
+	:has("Active", boolean);
+
+--LegalProvider:ref(Organization);
+
+--Accounts.Invoice:has("Time", time);
+
+-=Supplier
+	:has("Consumers", Supplier.Consumer, :many)
+	:has("Invoices", Accounts.Invoice, :many)
+	:has("OrderProcess", Supplier.OrderProcess, :many);
+Supplier.OrderProcess:has("States", Supplier.OrderProcessState, :many);
+Supplier.Order
+	:has("State", Supplier.OrderProcessState)
+	:has("Supplier", Supplier)
+	:has("Consumer", Supplier.Consumer)
+	:has("Products", Supplier.Product, :many,
+		:has("Quantity", real),
+		:has("Options", text),
+		:has("Notes", text)
+	);
+Supplier.Receipt:extends(Record);
+Supplier.Consumer:extends(Avatar)
+	:has("Link", Consumer, :optional);
+Supplier.Product:extends(Material):has("Pricing", Supplier.Pricing);
+Supplier.Catalogue:has("Products", Supplier.Product, :many);=-
+
+-=Consumer
+	:has("Suppliers", Consumer.Supplier,:many)
+	:has("Invoices", Accounts.Invoice, :many);
+Consumer.Order
+	:has("Consumer", Consumer)
+	:has("Supplier", Consumer.Supplier);
+Consumer.Supplier:extends(Avatar)
+	:has("Link", Supplier, :optional);=-
+
+-=Material
+	:has("Name", text)
+	:has("Description", text)
+	:has("Properties", Material.Property, :many,
+		:has("Proportion", real),
+		:has("Present", boolean)
+	)
+	:has("Unit", text);
+Material.Property
+	:has("Name", text)
+	:has("Unit", text)
+	:has("Transitive", boolean);=-
+
+-=Production:ref(Organization)
+	:has("Materials", Material, :many, :has("Quantity", real));
+Production.Process:extends(Organization.Asset);
+Production.Program:extends(Organization.Asset)
+	:has("Process", Production.Process)
+	:has("Inputs", Material, :many,
+		:has("Quantity", real)
+	)
+	:has("Outputs", Material, :many,
+		:has("Quantity", real)
+	);
+
+Production.Schedule:extends(Organization.Record)
+	:has("Programs", Production.Program, :many,
+		:has("Quantity", real),
+		:has("Notes", text)
+	);
+
+Packing:ref(Organization);
+Packing.Schedule:extends(Organization.Record)
+	:ref(Material)
+	:has("Quantity", real);
+
+Dispatch:ref(Organization);
+Dispatch.Schedule:extends(Organization.Record);=-
+
+-=CateringProvider:ref(Organization);
+CateringProvider.Container:has("Organization", Organization);
+CateringProvider.Recipe:extends(Production.Process);
+CateringProvider.Meal:extends(Organization.Asset)
+	:has("Containers", CateringProvider.Container, :many)
+	:has("Recipe", CateringProvider.Recipe);
+CateringProvider.Batch:extends(Organization.Record);
+CateringProvider.Schedule:extends(Production.Schedule);=-
+
+-=
+AttendanceProvider:ref(Organization)
+	:has("DefaultArea", Organization.Area)
+	:has("UnknownArea", Organization.Area)
+	:has("AbsentArea", Organization.Area);
+AttendanceProvider.AttendanceRecord:extends(Organization.Record);
+
+MealProvider:ref(Organization);
+MealProvider.Meal:extends(Organization.Asset)
+	:has("Start", time, :optional)
+	:has("End", time, :optional);
+MealProvider.Menu:ref(MealProvider):ref(MealProvider.Meal):ref(Organization.Area)
+	:has("Food", Food, :many);
+MealProvider.MealRecord:extends(Organization.Record)
+	:has("Meal", MealProvider.Meal)
+	:has("Area", Organization.Area);
+
+SleepProvider:ref(Organization);
+SleepProvider.SleepRecord:extends(Organization.Record)
+	:has("Area", Organization.Area);
+
+ToiletProvider:ref(Organization);
+ToiletProvider.ToiletRecord:extends(Organization.Record)
+	:has("Room", Organization.Area);
+
+ActivityProvider:ref(Organization);
+ActivityProvider.Activity:extends(Organization.Asset);
+ActivityProvider.ActivityRecord:extends(Organization.Record)
+	:has("Area", Organization.Area);
+
+CareProvider:ref(Organization)
+	:has("Families", Family, :many, :has("Conversation", Conversation));
+CareProvider.Dependant:extends(Avatar):has("CareProvider", CareProvider):has("Link", Family.Dependant, :optional);
+CareProvider.DependantGroup:has("Dependants", CareProvider.Dependant, :many);
+
+ExerciseProvider:ref(Organization);
+ExerciseProvider.Exercise:extends(Organization.Asset);
+ExerciseProvider.ExerciseRecord:extends(Organization.Record)
+	:has("Area", Organization.Area);
+
+ChildCare:extends(CareProvider)
+	:extends(MealProvider)
+	:extends(AttendanceProvider)
+	:extends(SleepProvider)
+	:extends(ToiletProvider)
+	:extends(ActivityProvider);
+ChildCare.Class:extends(CareProvider.DependantGroup):has("DefaultArea", Organization.Area);
+ChildCare.IncidentRecord:extends(Organization.Record);
+ChildCare.AssessmentRecord:extends(Organization.Record);
+
+ElderlyCare:extends(CareProvider)
+	:extends(MealProvider)
+	:extends(AttendanceProvider)
+	:extends(ToiletProvider)
+	:extends(ActivityProvider)
+	:extends(ExerciseProvider);
+=-
+
