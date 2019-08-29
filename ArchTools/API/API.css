@@ -119,6 +119,31 @@ span.map > .type {
 	margin: 5px auto;
 }
 
+span.enum {
+	position: relative;
+	border: 1px solid #FF00C0;
+	padding: 5px 5px 5px 24px;
+	margin-left: 25px;
+	display: inline-block;
+	border-radius: 4px;
+	vertical-align: middle;
+}
+
+span.enum:before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -24px;
+	margin: auto;
+	height: 1.3em;
+	content: "enum";
+	background-color: #FF00C0;
+	color: white;
+	padding: 0px 5px 3px;
+	border-radius: 8px;
+	transform: rotate(-90deg);
+}
+
 /*span.array {
 	display: inline-block;
 	position: relative;

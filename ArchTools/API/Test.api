@@ -1,4 +1,6 @@
 section("Initialization",
-	method("init", parameters IS {})
+	method("init", parameters IS {}, returns IS enum(values IS {
+		"success" IS "Success",
+		"failure" IS "Failure"
+	}))
 );
-

@@ -59,6 +59,10 @@ DEF MapT <[TypeT] key, value>;
 METH :type(t@MapT) '<span class="map">{t:key:type} &#8658; {t:value:type}</span>';
 DEF map(key, value, args*) :new:apply(args:prepend(MapT)) \ ($:key <- key; $:value <- value);
 
+DEF EnumT <[TypeT] values>;
+METH :type(t@EnumT) '<span class="enum"><table>{SUM t:values:map(<name, description> '<tr><td class="name">"{name}"</td><td>{description}</td></tr>'):values | ""}</table></span>';
+DEF enum(args*) :new:apply(args:prepend(EnumT));
+
 DEF ObjectT <[TypeT] fields>;
 METH :type(t@ObjectT) '<span class="object"><table>{SUM t:fields:map(<name, field> '<tr><td class="name">{name}</td><td>{field:type}</td><td>{(NIL ~== field:description) | ""}</td></tr>'):values | ''}</table></span>';
 DEF object(args*) :new:apply(args:prepend(ObjectT));
@@ -164,6 +168,7 @@ session:def("id", id);
 session:def("array", array);
 session:def("set", set);
 session:def("map", map);
+session:def("enum", enum);
 
 REP (WHILE buffer:length > 0;
 	session:eval;
